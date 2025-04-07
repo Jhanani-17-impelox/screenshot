@@ -29,6 +29,19 @@ class MarkdownText(tk.Text):
         self.tag_configure("bullet", lmargin1=20, lmargin2=30)
         self.tag_configure("link", foreground="blue", underline=1)
 
+        # Table styling with background colors
+        self.tag_configure("table_border", foreground="#555555")
+        self.tag_configure("table_header", 
+                        font=("Courier", 10, "bold"), 
+                        foreground="#000000",
+                        background="#e1e5eb")  # Light gray background for header
+        self.tag_configure("table_row_even", 
+                        foreground="#333333",
+                        background="#f5f7fa")  # Very light gray for even rows
+        self.tag_configure("table_row_odd", 
+                        foreground="#333333",
+                        background="#ffffff")  # White for odd rows
+
     def insert_markdown(self, text):
         """Parse and insert markdown text"""
         # Clear current content
@@ -37,41 +50,207 @@ class MarkdownText(tk.Text):
         # Process lines
         code_block = False
         bullet_list = False
+        table_mode = False
+        table_rows = []
         
-        for line in text.split('\n'):
+        lines = text.split('\n')
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            
             # Code blocks
             if line.strip().startswith('```'):
                 code_block = not code_block
                 if not code_block:  # End of code block
                     self.insert(tk.END, '\n')
+                i += 1
                 continue
             
             if code_block:
                 self.insert(tk.END, line + '\n', "code")
+                i += 1
                 continue
+            
+            # Table detection
+            if line.strip().startswith('|') and '|' in line[1:]:
+                if not table_mode:
+                    table_mode = True
+                    table_rows = []
+                
+                table_rows.append(line)
+                i += 1
+                
+                # Check if next line is a separator line or if this is the end of the table
+                if i < len(lines) and lines[i].strip().startswith('|') and '-' in lines[i]:
+                    table_rows.append(lines[i])
+                    i += 1
+                    continue
+                
+                # Peek ahead to see if the table continues
+                if i < len(lines) and lines[i].strip().startswith('|'):
+                    continue
+                else:
+                    # Process the complete table
+                    self.process_table(table_rows)
+                    table_mode = False
+                    continue
             
             # Headings
             if line.strip().startswith('# '):
                 self.insert(tk.END, line[2:] + '\n', "heading1")
+                i += 1
                 continue
             elif line.strip().startswith('## '):
                 self.insert(tk.END, line[3:] + '\n', "heading2")
+                i += 1
                 continue
             elif line.strip().startswith('### '):
                 self.insert(tk.END, line[4:] + '\n', "heading3")
+                i += 1
                 continue
             
             # Bullet lists
             if line.strip().startswith('- ') or line.strip().startswith('* '):
                 bullet_list = True
                 self.insert(tk.END, '• ' + line[2:].strip() + '\n', "bullet")
+                i += 1
                 continue
             
             # Process inline formatting
             self.process_inline_markdown(line)
             self.insert(tk.END, '\n')
             bullet_list = False
+            i += 1
     
+    def process_table(self, table_rows):
+        """Process and render a markdown table with improved formatting"""
+        # Parse table structure
+        rows = []
+        is_header = True
+        column_alignments = []
+        
+        for row_idx, row in enumerate(table_rows):
+            # Skip empty rows
+            if not row.strip():
+                continue
+                
+            # Check if this is a separator row (|---|---|)
+            if row.strip().replace('|', '').replace('-', '').replace(':', '').strip() == '':
+                # This is a separator row - parse alignments
+                cells = row.strip().split('|')[1:-1]  # Skip first and last empty
+                alignments = []
+                
+                for cell in cells:
+                    cell = cell.strip()
+                    if cell.startswith(':') and cell.endswith(':'):
+                        alignments = 'center'
+                    elif cell.startswith(':'):
+                        alignments = 'left'
+                    elif cell.endswith(':'):
+                        alignments = 'right'
+                    else:
+                        alignments = 'left'  # Default alignment
+                    column_alignments.append(alignments)
+                    
+                is_header = False
+                continue
+                
+            # Process cells in the row
+            cells = []
+            for cell in row.strip().split('|')[1:-1]:  # Skip the first and last empty cells
+                # Process any markdown in the cell
+                cells.append(cell.strip())
+            
+            rows.append((cells, is_header))
+            is_header = False
+        
+        if not rows:
+            return
+        
+        # Calculate column widths based on content
+        col_count = max(len(row[0]) for row in rows)
+        col_widths = [0] * col_count
+        
+        for row, _ in rows:
+            for i, cell in enumerate(row):
+                if i < col_count:
+                    # Account for markdown characters in width calculation
+                    clean_cell = re.sub(r'\*\*(.*?)\*\*', r'\1', cell)  # Remove bold
+                    clean_cell = re.sub(r'\*(.*?)\*', r'\1', clean_cell)  # Remove italic
+                    col_widths[i] = max(col_widths[i], len(clean_cell))
+        
+        # Set minimum column width
+        min_col_width = 8
+        col_widths = [max(w, min_col_width) for w in col_widths]
+        
+        # Render table with borders
+        self.insert(tk.END, "\n")
+        
+        # Render top border
+        top_border = "┌"
+        for i, width in enumerate(col_widths):
+            top_border += "─" * (width + 2)
+            if i < len(col_widths) - 1:
+                top_border += "┬"
+        top_border += "┐\n"
+        self.insert(tk.END, top_border, "table_border")
+        
+        # Render rows
+        for row_idx, (cells, is_header) in enumerate(rows):
+            row_text = "│"
+            
+            for i, cell in enumerate(cells):
+                if i >= col_count:
+                    continue
+                    
+                # Clean cell content from markdown for alignment
+                clean_cell = re.sub(r'\*\*(.*?)\*\*', r'\1', cell)
+                clean_cell = re.sub(r'\*(.*?)\*', r'\1', clean_cell)
+                
+                # Apply alignment
+                alignment = column_alignments[i] if i < len(column_alignments) else 'left'
+                cell_width = col_widths[i]
+                
+                if alignment == 'left':
+                    padded_cell = clean_cell.ljust(cell_width)
+                elif alignment == 'right':
+                    padded_cell = clean_cell.rjust(cell_width)
+                else:  # center
+                    padded_cell = clean_cell.center(cell_width)
+                
+                # Restore markdown formatting
+                formatted_cell = cell.replace(clean_cell, padded_cell)
+                
+                # Add cell to row
+                row_text += " " + formatted_cell + " │"
+            
+            # Insert the row with appropriate tag
+            if is_header:
+                self.insert(tk.END, row_text + "\n", "table_header")
+                
+                # Add header separator
+                sep_row = "├"
+                for i, width in enumerate(col_widths):
+                    sep_row += "─" * (width + 2)
+                    if i < len(col_widths) - 1:
+                        sep_row += "┼"
+                sep_row += "┤\n"
+                self.insert(tk.END, sep_row, "table_border")
+            else:
+                tag = "table_row_even" if row_idx % 2 == 0 else "table_row_odd"
+                self.insert(tk.END, row_text + "\n", tag) 
+        # Render bottom border
+        bottom_border = "└"
+        for i, width in enumerate(col_widths):
+            bottom_border += "─" * (width + 2)
+            if i < len(col_widths) - 1:
+                bottom_border += "┴"
+        bottom_border += "┘\n"
+        self.insert(tk.END, bottom_border, "table_border")
+        
+        self.insert(tk.END, "\n")
+
+
     def process_inline_markdown(self, line):
         """Process inline markdown elements like bold, italic, and links"""
         line_remaining = line
@@ -109,7 +288,6 @@ class MarkdownText(tk.Text):
             
             # Update remaining line
             line_remaining = line_remaining[end:]
-
 class ScreenshotApp:
     def __init__(self, root):
         
