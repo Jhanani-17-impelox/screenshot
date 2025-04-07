@@ -599,11 +599,12 @@ class ScreenshotApp:
             screenshot.save(file_path, quality=95)
             
             # Compress image for base64 encoding
-            compressed_img = self.compress_image(screenshot)
+            # compressed_img = self.compress_image(screenshot)
             
             # Convert screenshot to base64
             buffered = BytesIO()
-            compressed_img.save(buffered, format="PNG", optimize=True)
+            screenshot.save(buffered, format="PNG", optimize=True)
+            # compressed_img.save(buffered, format="PNG", optimize=True)
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             
             # Add data URI prefix to base64 string
