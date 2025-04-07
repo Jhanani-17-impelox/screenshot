@@ -769,7 +769,7 @@ class ScreenshotApp:
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             
             # Add data URI prefix to base64 string
-            img_str = f"data:image/png;base64,{img_str_raw}"
+            img_str = img_str_raw
             
             # Create JSON payload with the base64 image
             session_id = str(uuid.uuid4())
@@ -832,7 +832,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 "path": file_path,
                 "base64": img_str,
                 "payload_json": payload_json,
-                "api_response": mock_response
+                "api_response": api_result
             })
             
             # Clear existing screenshots from UI
@@ -1016,7 +1016,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
         
     def make_api_call(self, payload):
         # This function is commented out - using mock response instead
-        """
+       
         try:
             url = "http://localhost:8001/v1/chat"
             headers = {
@@ -1031,9 +1031,8 @@ This is an example of *formatted markdown* text that will be displayed properly 
         except requests.exceptions.RequestException as e:
             print("The error is:", str(e))
             return None
-        """
-        mock_response = "This is a mock response since the API is non-functional."
-        return mock_response
+      
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
