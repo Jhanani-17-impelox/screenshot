@@ -599,16 +599,17 @@ class ScreenshotApp:
             screenshot.save(file_path, quality=95)
             
             # Compress image for base64 encoding
-            # compressed_img = self.compress_image(screenshot)
+            compressed_img = self.compress_image(screenshot)
             
             # Convert screenshot to base64
             buffered = BytesIO()
-            screenshot.save(buffered, format="PNG", optimize=True)
-            # compressed_img.save(buffered, format="PNG", optimize=True)
+            # screenshot.save(buffered, format="PNG", optimize=True)
+            compressed_img.save(buffered, format="PNG", optimize=True)
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             
             # Add data URI prefix to base64 string
-            img_str = f"data:image/png;base64,{img_str_raw}"
+            # img_str = f"data:image/png;base64,{img_str_raw}"
+            img_str =img_str_raw
             
             # Create JSON payload with the base64 image
             session_id = str(uuid.uuid4())
@@ -665,7 +666,7 @@ class ScreenshotApp:
             self.is_capturing = False
             self.hide_loader()  # Hide loader when capture is complete
     
-    def compress_image(self, image, quality=60, max_size=1024):
+    def compress_image(self, image, quality=40, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size
         
