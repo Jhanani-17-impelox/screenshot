@@ -1,0 +1,36 @@
+2025-04-07 19:45:44,888 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 19:45:44,904 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-07 19:45:50,600 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250407_194544\screenshot_194550_new_codepy - screenshots - Vis.png
+2025-04-07 19:45:50,784 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 19:45:50,786 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-07 19:45:50,947 - INFO - Status updated: Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:45:50,951 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:45:52,571 - INFO - Status updated: Captured active window: new_code.py - screenshots - Visual Studio Code - 2 problems in this file
+2025-04-07 19:54:51,604 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 19:54:51,609 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-07 19:54:55,627 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250407_195451\screenshot_195455_new_codepy - screenshots - Vis.png
+2025-04-07 19:54:55,822 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 19:54:55,822 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-07 19:54:55,981 - INFO - Status updated: Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:54:55,981 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:54:57,424 - INFO - Status updated: Captured active window: new_code.py - screenshots - Visual Studio Code - 2 problems in this file
+2025-04-07 19:55:53,963 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250407_195451\screenshot_195553_new_codepy - screenshots - Vis.png
+2025-04-07 19:55:54,202 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 19:55:54,205 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-07 19:55:54,406 - INFO - Status updated: Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:55:54,406 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 19:55:55,156 - INFO - Status updated: Captured active window: new_code.py - screenshots - Visual Studio Code - 2 problems in this file
+2025-04-07 20:04:05,959 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 20:04:05,960 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-07 20:04:16,321 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250407_200405\screenshot_200416_Explorer Exclude Update - scre.png
+2025-04-07 20:04:16,439 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 20:04:16,439 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-07 20:04:16,529 - INFO - Status updated: Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 20:04:16,529 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 20:04:17,700 - INFO - Status updated: Captured active window: Explorer Exclude Update - screenshots - Visual Studio Code
+2025-04-07 20:04:27,606 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250407_200405\screenshot_200427_Explorer Exclude Update - scre.png
+2025-04-07 20:04:27,693 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-07 20:04:27,693 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-07 20:04:27,786 - INFO - Status updated: Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 20:04:27,786 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-07 20:04:28,025 - INFO - Status updated: Captured active window: Explorer Exclude Update - screenshots - Visual Studio Code

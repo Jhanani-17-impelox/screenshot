@@ -15,6 +15,18 @@ import uuid
 import requests
 import re
 
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set to DEBUG for development, INFO for production
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),  # Log to a file
+        logging.StreamHandler()  # Log to console
+    ]
+)
+
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
     def __init__(self, *args, **kwargs):
@@ -287,7 +299,6 @@ class MarkdownText(tk.Text):
             
             # Update remaining line
             line_remaining = line_remaining[end:]
-
 class ScreenshotApp:
     def __init__(self, root):
         
@@ -372,8 +383,11 @@ class ScreenshotApp:
             with open(self.payload_file, 'w') as f:
                 json.dump(payload, f, indent=2)
             self.update_status(f"Payload saved to {self.payload_file}", "success")
+            logging.info(f"Payload saved to {self.payload_file}")
+
         except Exception as e:
             self.update_status(f"Error saving payload: {str(e)}", "error")
+            logging.error(f"Error saving payload: {str(e)}")
 
     def setup_icon(self):
         try:
@@ -744,6 +758,7 @@ class ScreenshotApp:
             
             # Save original high-resolution image
             screenshot.save(file_path, quality=95)
+            logging.info(f"Screenshot saved to {file_path}")
             
             # Compress image for base64 encoding
             compressed_img = self.compress_image(screenshot)
@@ -778,7 +793,9 @@ class ScreenshotApp:
                 ]
             }
             
-            # Mock response with markdown formatting including table
+            # Comment out the API call and use mock response
+            # result = self.make_api_call(payload_json)
+            # Mock response for API call with markdown formatting
             mock_response = """# Inspector's Notes
 **Date**: April 4, 2025
 **Condition**: Good
@@ -798,7 +815,12 @@ This is an example of *formatted markdown* text that will be displayed properly 
 | Displacement | 5.0L | Normal |
 | Oil Level | 95% | Good |
 | Coolant | 85% | Good |
+| Battery | 100% | Good |
+
+
+
 """
+          
             
             self.save_payload_to_file(payload_json)
             
@@ -825,7 +847,8 @@ This is an example of *formatted markdown* text that will be displayed properly 
         
         except Exception as e:
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
-        
+            logging.error(f"Error capturing screenshot: {str(e)}")
+
         finally:
             self.is_capturing = False
     
@@ -849,7 +872,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
         image.save(output, format='PNG', optimize=True, quality=quality)
         output.seek(0)
         return Image.open(output)
-
+    
     def update_status(self, message, status_type="info"):
         self.status_message = message
         self.status_type = status_type
@@ -869,6 +892,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
             background=bg_color,
             foreground=fg_color
         )
+        logging.info(f"Status updated: {message}")
     
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
@@ -966,6 +990,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 subprocess.call(['xdg-open', path])
         except Exception as e:
             self.update_status(f"Error opening screenshot: {str(e)}", "error")
+            logging.error(f"Error opening screenshot: {str(e)}")
 
             
     def open_screenshots_folder(self):
@@ -978,11 +1003,16 @@ This is an example of *formatted markdown* text that will be displayed properly 
             else:  # Linux
                 import subprocess
                 subprocess.call(['xdg-open', self.temp_dir])
+            logging.info(f"Opened screenshots folder: {self.temp_dir}")
+
+
         except Exception as e:
             self.update_status(f"Error opening folder: {str(e)}", "error")
-    
+            logging.error(f"Error opening folder: {str(e)}")
+
     def on_close(self):
         self.root.destroy()
+        logging.info("Application closed.")
         
     def make_api_call(self, payload):
         # This function is commented out - using mock response instead
