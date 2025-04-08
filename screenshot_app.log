@@ -64,3 +64,365 @@
 2025-04-08 13:41:00,668 - INFO - Mock API response returned.
 2025-04-08 13:41:00,677 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
 2025-04-08 13:41:01,596 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 13:59:59,589 - INFO - ScreenshotApp initialized.
+2025-04-08 13:59:59,721 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 13:59:59,722 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:00:06,212 - INFO - Starting capture process.
+2025-04-08 14:00:06,213 - INFO - Capture already in progress.
+2025-04-08 14:00:06,234 - INFO - Loader shown for capture process.
+2025-04-08 14:00:06,319 - INFO - Windows hidden for capture.
+2025-04-08 14:00:06,821 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:00:06,822 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:00:06,906 - INFO - Screenshot taken for active window.
+2025-04-08 14:00:07,102 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:00:07,102 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:00:07,170 - DEBUG - Starting new HTTP connection (1): localhost:8001
+2025-04-08 14:00:11,246 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:00:11,256 - ERROR - Error capturing screenshot: 'NoneType' object has no attribute 'get'
+2025-04-08 14:00:25,921 - INFO - Starting capture process.
+2025-04-08 14:00:25,923 - INFO - Capture already in progress.
+2025-04-08 14:00:25,924 - INFO - Loader shown for capture process.
+2025-04-08 14:00:25,984 - INFO - Windows hidden for capture.
+2025-04-08 14:00:26,488 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:00:26,489 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:00:26,547 - INFO - Screenshot taken for active window.
+2025-04-08 14:00:26,805 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:00:26,806 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:00:26,869 - DEBUG - Starting new HTTP connection (1): localhost:8001
+2025-04-08 14:00:30,915 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:00:30,921 - ERROR - Error capturing screenshot: 'NoneType' object has no attribute 'get'
+2025-04-08 14:03:06,318 - INFO - ScreenshotApp initialized.
+2025-04-08 14:03:06,514 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:03:06,517 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:03:09,994 - INFO - Starting capture process.
+2025-04-08 14:03:09,997 - INFO - Capture already in progress.
+2025-04-08 14:03:10,038 - INFO - Loader shown for capture process.
+2025-04-08 14:03:10,120 - INFO - Windows hidden for capture.
+2025-04-08 14:03:10,621 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:03:10,621 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:03:10,697 - INFO - Screenshot taken for active window.
+2025-04-08 14:03:10,877 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:03:10,878 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:03:10,956 - DEBUG - Starting new HTTP connection (1): localhost:8001
+2025-04-08 14:03:15,049 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:03:15,059 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:04:25,926 - INFO - ScreenshotApp initialized.
+2025-04-08 14:04:26,181 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:04:26,181 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:04:28,311 - INFO - Starting capture process.
+2025-04-08 14:04:28,313 - INFO - Capture already in progress.
+2025-04-08 14:04:28,365 - INFO - Loader shown for capture process.
+2025-04-08 14:04:28,482 - INFO - Windows hidden for capture.
+2025-04-08 14:04:28,985 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:04:28,985 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:04:29,043 - INFO - Screenshot taken for active window.
+2025-04-08 14:04:29,228 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:04:29,228 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:04:29,326 - DEBUG - Starting new HTTP connection (1): localhost:8001
+2025-04-08 14:04:33,367 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:04:33,370 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:05:31,993 - INFO - ScreenshotApp initialized.
+2025-04-08 14:05:32,158 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:05:32,162 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:05:38,246 - INFO - Starting capture process.
+2025-04-08 14:05:38,247 - INFO - Capture already in progress.
+2025-04-08 14:05:38,267 - INFO - Loader shown for capture process.
+2025-04-08 14:05:38,355 - INFO - Windows hidden for capture.
+2025-04-08 14:05:38,856 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:05:38,857 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:05:38,930 - INFO - Screenshot taken for active window.
+2025-04-08 14:05:39,213 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:05:39,213 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:05:39,300 - INFO - Mock API response returned.
+2025-04-08 14:05:39,307 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:05:39,309 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:06:50,959 - INFO - Starting capture process.
+2025-04-08 14:06:50,960 - INFO - Capture already in progress.
+2025-04-08 14:06:50,961 - INFO - Loader shown for capture process.
+2025-04-08 14:06:51,061 - INFO - Windows hidden for capture.
+2025-04-08 14:06:51,562 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:06:51,563 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:06:51,655 - INFO - Screenshot taken for active window.
+2025-04-08 14:06:51,906 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:06:51,906 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:06:51,955 - INFO - Mock API response returned.
+2025-04-08 14:06:51,960 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:06:51,964 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:08:07,584 - INFO - ScreenshotApp initialized.
+2025-04-08 14:08:07,850 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:08:07,851 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:08:09,644 - INFO - Starting capture process.
+2025-04-08 14:08:09,646 - INFO - Capture already in progress.
+2025-04-08 14:08:09,665 - INFO - Loader shown for capture process.
+2025-04-08 14:08:09,722 - INFO - Windows hidden for capture.
+2025-04-08 14:08:10,224 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:08:10,225 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:08:10,286 - INFO - Screenshot taken for active window.
+2025-04-08 14:08:10,495 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:08:10,496 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:08:10,545 - INFO - Mock API response returned.
+2025-04-08 14:08:10,551 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:08:10,555 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:08:47,666 - INFO - ScreenshotApp initialized.
+2025-04-08 14:08:47,882 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:08:47,883 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:08:50,468 - INFO - Starting capture process.
+2025-04-08 14:08:50,471 - INFO - Capture already in progress.
+2025-04-08 14:08:50,496 - INFO - Loader shown for capture process.
+2025-04-08 14:08:50,550 - INFO - Windows hidden for capture.
+2025-04-08 14:08:51,053 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:08:51,054 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:08:51,118 - INFO - Screenshot taken for active window.
+2025-04-08 14:08:51,362 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:08:51,362 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:08:51,420 - INFO - Mock API response returned.
+2025-04-08 14:08:51,425 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:08:51,438 - ERROR - Error capturing screenshot: 'str' object has no attribute 'get'
+2025-04-08 14:19:29,401 - INFO - ScreenshotApp initialized.
+2025-04-08 14:19:29,659 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:19:29,660 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:19:35,168 - INFO - Starting capture process.
+2025-04-08 14:19:35,170 - INFO - Capture already in progress.
+2025-04-08 14:19:35,218 - INFO - Loader shown for capture process.
+2025-04-08 14:19:35,361 - INFO - Windows hidden for capture.
+2025-04-08 14:19:35,862 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:19:35,863 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:19:35,932 - INFO - Screenshot taken for active window.
+2025-04-08 14:19:36,116 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:19:36,116 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:19:37,225 - ERROR - Error in mock API call: name 'random' is not defined
+2025-04-08 14:19:37,245 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:19:37,389 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:20:43,160 - INFO - ScreenshotApp initialized.
+2025-04-08 14:20:43,387 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:20:43,388 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:20:45,757 - INFO - Starting capture process.
+2025-04-08 14:20:45,758 - INFO - Capture already in progress.
+2025-04-08 14:20:45,782 - INFO - Loader shown for capture process.
+2025-04-08 14:20:45,945 - INFO - Windows hidden for capture.
+2025-04-08 14:20:46,447 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:20:46,447 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:20:46,523 - INFO - Screenshot taken for active window.
+2025-04-08 14:20:46,782 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:20:46,783 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:20:47,860 - ERROR - Error in mock API call: name 'random' is not defined
+2025-04-08 14:20:47,868 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:20:47,997 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:23:42,420 - INFO - ScreenshotApp initialized.
+2025-04-08 14:23:42,615 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:23:42,616 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:23:44,770 - INFO - Starting capture process.
+2025-04-08 14:23:44,772 - INFO - Capture already in progress.
+2025-04-08 14:23:44,791 - INFO - Loader shown for capture process.
+2025-04-08 14:23:44,833 - INFO - Windows hidden for capture.
+2025-04-08 14:23:45,335 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:23:45,335 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:23:45,466 - INFO - Screenshot taken for active window.
+2025-04-08 14:23:45,747 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:23:45,748 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:23:46,837 - ERROR - Error in mock API call: name 'random' is not defined
+2025-04-08 14:23:46,861 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:23:46,988 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:26:05,724 - INFO - ScreenshotApp initialized.
+2025-04-08 14:26:05,941 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:26:05,942 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:26:07,799 - INFO - Starting capture process.
+2025-04-08 14:26:07,801 - INFO - Capture already in progress.
+2025-04-08 14:26:07,906 - INFO - Loader shown for capture process.
+2025-04-08 14:26:08,127 - INFO - Windows hidden for capture.
+2025-04-08 14:26:08,630 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:26:08,630 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:26:08,755 - INFO - Screenshot taken for active window.
+2025-04-08 14:26:09,007 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:26:09,008 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:26:10,094 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:26:10,246 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:26:47,135 - INFO - Starting capture process.
+2025-04-08 14:26:47,136 - INFO - Capture already in progress.
+2025-04-08 14:26:47,136 - INFO - Loader shown for capture process.
+2025-04-08 14:26:47,172 - INFO - Windows hidden for capture.
+2025-04-08 14:26:47,674 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:26:47,674 - INFO - Window bounds: (0, 0, 960, 1020)
+2025-04-08 14:26:47,867 - INFO - Screenshot taken for active window.
+2025-04-08 14:26:48,197 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:26:48,197 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:26:49,459 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:26:49,688 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:27:06,666 - INFO - Starting capture process.
+2025-04-08 14:27:06,667 - INFO - Capture already in progress.
+2025-04-08 14:27:06,668 - INFO - Loader shown for capture process.
+2025-04-08 14:27:06,774 - INFO - Windows hidden for capture.
+2025-04-08 14:27:07,278 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:27:07,279 - INFO - Window bounds: (400, 0, 560, 1020)
+2025-04-08 14:27:07,351 - INFO - Screenshot taken for active window.
+2025-04-08 14:27:07,647 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:27:07,648 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:27:08,789 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:27:09,114 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:30:47,112 - INFO - ScreenshotApp initialized.
+2025-04-08 14:30:47,328 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:30:47,329 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:30:50,028 - INFO - Starting capture process.
+2025-04-08 14:30:50,031 - INFO - Capture already in progress.
+2025-04-08 14:30:50,116 - INFO - Loader shown for capture process.
+2025-04-08 14:30:50,221 - INFO - Windows hidden for capture.
+2025-04-08 14:30:50,723 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:30:50,725 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:30:50,800 - INFO - Screenshot taken for active window.
+2025-04-08 14:30:51,016 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:30:51,016 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:30:51,088 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:30:51,231 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:32:11,893 - INFO - ScreenshotApp initialized.
+2025-04-08 14:32:12,130 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:32:12,131 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:32:14,599 - INFO - Starting capture process.
+2025-04-08 14:32:14,603 - INFO - Capture already in progress.
+2025-04-08 14:32:14,656 - INFO - Loader shown for capture process.
+2025-04-08 14:32:14,681 - INFO - Windows hidden for capture.
+2025-04-08 14:32:15,186 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:32:15,186 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:32:15,271 - INFO - Screenshot taken for active window.
+2025-04-08 14:32:15,529 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:32:15,529 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:32:15,620 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:32:15,727 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:32:42,441 - INFO - ScreenshotApp initialized.
+2025-04-08 14:32:42,622 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:32:42,622 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:32:47,543 - INFO - Starting capture process.
+2025-04-08 14:32:47,546 - INFO - Capture already in progress.
+2025-04-08 14:32:47,562 - INFO - Loader shown for capture process.
+2025-04-08 14:32:47,604 - INFO - Windows hidden for capture.
+2025-04-08 14:32:48,110 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:32:48,110 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:32:48,193 - INFO - Screenshot taken for active window.
+2025-04-08 14:32:48,558 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:32:48,558 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:32:48,655 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:32:48,859 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:33:22,446 - INFO - ScreenshotApp initialized.
+2025-04-08 14:33:22,651 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:33:22,653 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:33:24,272 - INFO - Starting capture process.
+2025-04-08 14:33:24,274 - INFO - Capture already in progress.
+2025-04-08 14:33:24,315 - INFO - Loader shown for capture process.
+2025-04-08 14:33:24,370 - INFO - Windows hidden for capture.
+2025-04-08 14:33:24,872 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:33:24,872 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:33:24,979 - INFO - Screenshot taken for active window.
+2025-04-08 14:33:25,387 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:33:25,388 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:33:25,541 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:33:25,710 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:34:53,437 - INFO - ScreenshotApp initialized.
+2025-04-08 14:34:53,661 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:34:53,662 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:34:58,797 - INFO - Starting capture process.
+2025-04-08 14:34:58,801 - INFO - Capture already in progress.
+2025-04-08 14:34:58,833 - INFO - Loader shown for capture process.
+2025-04-08 14:34:58,878 - INFO - Windows hidden for capture.
+2025-04-08 14:34:59,381 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:34:59,382 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:34:59,452 - INFO - Screenshot taken for active window.
+2025-04-08 14:34:59,828 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:34:59,828 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:34:59,960 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:00,146 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:12,122 - INFO - Starting capture process.
+2025-04-08 14:35:12,124 - INFO - Capture already in progress.
+2025-04-08 14:35:12,126 - INFO - Loader shown for capture process.
+2025-04-08 14:35:12,180 - INFO - Windows hidden for capture.
+2025-04-08 14:35:12,682 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:12,684 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:35:12,777 - INFO - Screenshot taken for active window.
+2025-04-08 14:35:13,305 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:35:13,305 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:35:13,562 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:13,904 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:14,180 - INFO - Starting capture process.
+2025-04-08 14:35:14,181 - INFO - Capture already in progress.
+2025-04-08 14:35:14,182 - INFO - Loader shown for capture process.
+2025-04-08 14:35:14,239 - INFO - Windows hidden for capture.
+2025-04-08 14:35:14,741 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:14,741 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:35:14,839 - INFO - Screenshot taken for active window.
+2025-04-08 14:35:15,389 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:35:15,390 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:35:15,634 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:15,932 - INFO - Capture already in progress.
+2025-04-08 14:35:16,199 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:17,510 - INFO - Starting capture process.
+2025-04-08 14:35:17,512 - INFO - Capture already in progress.
+2025-04-08 14:35:17,514 - INFO - Loader shown for capture process.
+2025-04-08 14:35:17,587 - INFO - Windows hidden for capture.
+2025-04-08 14:35:18,089 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:18,089 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:35:18,209 - INFO - Screenshot taken for active window.
+2025-04-08 14:35:18,625 - INFO - Capture already in progress.
+2025-04-08 14:35:18,803 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:35:18,804 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:35:19,087 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:19,872 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:19,976 - INFO - Starting capture process.
+2025-04-08 14:35:19,977 - INFO - Capture already in progress.
+2025-04-08 14:35:19,979 - INFO - Loader shown for capture process.
+2025-04-08 14:35:20,030 - INFO - Windows hidden for capture.
+2025-04-08 14:35:20,532 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:20,532 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:35:20,628 - INFO - Screenshot taken for active window.
+2025-04-08 14:35:21,199 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:35:21,200 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:35:21,463 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:21,966 - INFO - Capture already in progress.
+2025-04-08 14:35:22,304 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:23,632 - INFO - Starting capture process.
+2025-04-08 14:35:23,634 - INFO - Capture already in progress.
+2025-04-08 14:35:23,634 - INFO - Loader shown for capture process.
+2025-04-08 14:35:23,687 - INFO - Windows hidden for capture.
+2025-04-08 14:35:24,191 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:35:24,192 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:35:24,310 - INFO - Screenshot taken for active window.
+2025-04-08 14:35:24,880 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:35:24,880 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:35:25,144 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:35:26,362 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:43:19,941 - INFO - Starting capture process.
+2025-04-08 14:43:19,989 - INFO - Capture already in progress.
+2025-04-08 14:43:19,997 - INFO - Loader shown for capture process.
+2025-04-08 14:43:20,075 - INFO - Windows hidden for capture.
+2025-04-08 14:43:20,598 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:43:20,599 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:43:20,745 - INFO - Screenshot taken for active window.
+2025-04-08 14:43:21,325 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:43:21,328 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:43:21,637 - INFO - Payload saved to c:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:43:23,545 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:43:40,919 - INFO - ScreenshotApp initialized.
+2025-04-08 14:43:41,100 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:43:41,100 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:43:46,005 - INFO - Starting capture process.
+2025-04-08 14:43:46,007 - INFO - Capture already in progress.
+2025-04-08 14:43:46,051 - INFO - Loader shown for capture process.
+2025-04-08 14:43:46,082 - INFO - Windows hidden for capture.
+2025-04-08 14:43:46,586 - INFO - Captured window title: python - How to show markdown formatted text in tkinter? - Stack Overflow and 6 more pages - Personal - Microsoft\u200b Edge
+2025-04-08 14:43:46,588 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:43:46,676 - INFO - Screenshot taken for active window.
+2025-04-08 14:43:47,059 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:43:47,059 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:43:47,222 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:43:47,642 - INFO - Captured active window: python - How to show markdown formatted text in tkinter? - Stack Overflow and 6 more pages - Personal - Microsoft\u200b Edge
+2025-04-08 14:44:16,098 - INFO - ScreenshotApp initialized.
+2025-04-08 14:44:16,261 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:44:16,262 - DEBUG - STREAM b'IDAT' 41 8192
+2025-04-08 14:44:19,736 - INFO - Starting capture process.
+2025-04-08 14:44:19,746 - INFO - Capture already in progress.
+2025-04-08 14:44:19,766 - INFO - Loader shown for capture process.
+2025-04-08 14:44:19,808 - INFO - Windows hidden for capture.
+2025-04-08 14:44:20,312 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 14:44:20,313 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 14:44:20,638 - INFO - Screenshot taken for active window.
+2025-04-08 14:44:21,017 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 14:44:21,018 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 14:44:21,183 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 14:44:21,410 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code

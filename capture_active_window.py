@@ -1,3 +1,4 @@
+import random
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import pyautogui
@@ -279,7 +280,7 @@ class MarkdownText(tk.Text):
             if italic_match:
                 matches.append(('italic', italic_match.start(), italic_match.end(), italic_match.group(1)))
             if link_match:
-                matches.append(('link', link_match.start(), link_match.end(), link_match.group(1)))
+                matches.append(('link', link_match.start(), link_match.end(), bold_match.group(1)))
             
             # If no matches, insert remaining text and exit
             if not matches:
@@ -427,7 +428,7 @@ class ScreenshotApp:
         screenshots_frame = ttk.LabelFrame(main_frame, text="Captured Screenshots", padding=10)
         screenshots_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.canvas = tk.Canvas(screenshots_frame, bg="#F8DF7C")
+        self.canvas = tk.Canvas(screenshots_frame, bg="#f0f0f0")
         self.scrollbar = ttk.Scrollbar(screenshots_frame, orient=tk.VERTICAL, command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
@@ -849,22 +850,7 @@ class ScreenshotApp:
             
             # Comment out the API call and use mock response
             result = self.make_api_call(payload_json)
-            # Mock response for API call with markdown formatting
-            mock_response = """# Inspector's Notes
-**Date**: April 4, 2025
-**Condition**: Good
-
-## Engine Description
-This is an example of *formatted markdown* text that will be displayed properly in the app.
-
-### Details
-- High performance engine
-- Recently serviced
-- **No leaks detected**
-
-[More information](https://example.com)
-"""
-                   
+            
             self.save_payload_to_file(payload_json)
             
             # Add to screenshots list (at the beginning)
@@ -876,8 +862,6 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 "base64": img_str,
                 "payload_json": payload_json,
                 "api_response": result
-                # "api_response": mock_response
-
             })
             
             # Clear existing screenshots from UI
@@ -940,53 +924,76 @@ This is an example of *formatted markdown* text that will be displayed properly 
             background=bg_color,
             foreground=fg_color
         )
-    
+
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
         
-        # Check if API response exists
-        response_text = screenshot_data.get("api_response", "No API response available")
+        # Extract API response
+        api_response = screenshot_data.get("api_response", {})
+        inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
+        engine_details = api_response.get("engine_details", "No Engine Details available")
+        fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
+        has_engine_issue = api_response.get("has_engine_issue", False)
 
         frame = ttk.Frame(self.screenshots_container)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        # --- API Response Card ---
-        response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-        response_card.pack(fill=tk.X, padx=5, pady=5)
-
-        # --- Scrollable Text Container ---
-        text_frame = ttk.Frame(response_card)
-        text_frame.pack(fill=tk.BOTH, expand=True)
-
-        # --- Scrollbars ---
-        v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
+        # --- Combined Box for All Information ---
+        combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+        combined_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        # --- Response Content with Markdown Formatting ---
-        response_content = MarkdownText(
-            text_frame,
-            wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
-            height=20,  # Default height
-            width=70,
-            font=("Segoe UI", 10),
-            bg="#DBEAF7",
-            relief=tk.FLAT,
-            padx=10,
-            pady=5,
-            yscrollcommand=v_scrollbar.set,
-          
+        # Inspector Notes section
+        inspector_label = ttk.Label(
+            combined_frame,
+            text="Inspector Notes:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
         )
-        
-        # Insert Markdown text
-        response_content.insert_markdown(response_text)
-        
-        response_content.config(state=tk.DISABLED)  # Make it read-only
+        inspector_label.pack(anchor=tk.W)
+        inspector_content = ttk.Label(
+            combined_frame,
+            text=inspector_notes,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT
+        )
+        inspector_content.pack(anchor=tk.W, pady=(0, 10))
 
-        # Pack elements
-        v_scrollbar.config(command=response_content.yview)
-      
-        response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-      
+        # Engine Details section
+        engine_label = ttk.Label(
+            combined_frame,
+            text="Engine Details:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
+        )
+        engine_label.pack(anchor=tk.W)
+        engine_content = ttk.Label(
+            combined_frame,
+            text=engine_details,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT,
+            foreground="red" if has_engine_issue else self.colors["text_dark"]
+        )
+        engine_content.pack(anchor=tk.W, pady=(0, 10))
+
+        # Fault/Accident Details section
+        fault_label = ttk.Label(
+            combined_frame,
+            text="Fault/Accident Details:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
+        )
+        fault_label.pack(anchor=tk.W)
+        fault_content = ttk.Label(
+            combined_frame,
+            text=fault_accident,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT
+        )
+        fault_content.pack(anchor=tk.W)
+
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
         if img:
@@ -1005,7 +1012,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
             image_label = ttk.Label(image_frame, image=photo)
             image_label.image = photo
             image_label.pack()
-        
+
         # --- Header for Open Button ---
         title_frame = ttk.Frame(frame)
         title_frame.pack(fill=tk.X)
@@ -1026,7 +1033,8 @@ This is an example of *formatted markdown* text that will be displayed properly 
         open_button.pack(side=tk.RIGHT, padx=5)
         
         self.on_frame_configure(None)
-    
+
+
     def open_screenshot(self, path):
         try:
             if platform.system() == 'Windows':
@@ -1062,35 +1070,68 @@ This is an example of *formatted markdown* text that will be displayed properly 
         
     # def make_api_call(self, payload):
     #     self.show_loader()  # Show loader centered on the screen
-    #     mock_response = "This is a mock response since the API is non-functional."
-    
-    #     self.hide_loader()  # Hide loader when API call is complete
-    #     logger.info("Mock API response returned.")
-    #     return mock_response
+    #     try:
+    #         url = "http://localhost:8001/v1/chat"
+    #         headers = {
+    #             "Content-Type": "application/json",
+    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+    #         }
+
+    #         response = requests.post(url, json=payload, headers=headers)
+            
+    #         response.raise_for_status()
+
+    #         return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+
+    #     except requests.exceptions.RequestException as e:
+    #         print("The error is:", str(e))
+    #         return None
+
+    #     finally:
+    #         self.hide_loader()  # Hide loader when API call is complete
+
 
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
+            # Comment out the original API call
+            """
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
             response = requests.post(url, json=payload, headers=headers)
+            
             response.raise_for_status()
 
-            return response.json().get("assistant_message")
+            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+            """
+            
+            # Instead, generate a mock response
+            # time.sleep(1)  # Simulate API latency
+            mock_response = {
+                "inspector_notes": "Vehicle inspection completed on April 8, 2025. The vehicle appears to be in generally good condition with some minor issues noted. Regular maintenance has been performed according to service records.",
+                "engine_details": "2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. Oil level is adequate but due for change within 500 miles. Some oil seepage noted around valve cover gasket.",
+                "fault_accident": "Minor scrape on rear bumper, likely from parking incident. Driver side mirror shows signs of previous repair. No major accident damage detected. Check engine light intermittently appears according to owner.",
+                "has_engine_issue": True if random.random() > 0.7 else False  # Randomly return True ~30% of the time
+            }
+            return mock_response
 
-        except requests.exceptions.RequestException as e:
-            print("The error is:", str(e))
-            return None
+        except Exception as e:
+            logging.error(f"Error in mock API call: {str(e)}")
+            return {
+                "inspector_notes": "Error retrieving inspector notes.",
+                "engine_details": "Error retrieving engine details.",
+                "fault_accident": "Error retrieving fault/accident information.",
+                "has_engine_issue": False
+            }
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
 
-
-    
-
+            
 if __name__ == "__main__":
     root = tk.Tk()
     app = ScreenshotApp(root)
