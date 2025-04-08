@@ -850,31 +850,35 @@ class ScreenshotApp:
             
             # Comment out the API call and use mock response
             result = self.make_api_call(payload_json)
+            print(result)
+            if type(result) == str or result==None:
+                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                return
+            else:
+                self.save_payload_to_file(payload_json)
             
-            self.save_payload_to_file(payload_json)
+                # Add to screenshots list (at the beginning)
+                self.screenshots.insert(0, {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    "base64": img_str,
+                    "payload_json": payload_json,
+                    "api_response": result
+                })
+                
+                # Clear existing screenshots from UI
+                for widget in self.screenshots_container.winfo_children():
+                    widget.destroy()
+                
+                # Update the UI with all screenshots (newest first)
+                for i in range(len(self.screenshots)):
+                    self.add_screenshot_to_ui(i)
+                
+                self.update_status(f"Captured {capture_type}: {window_title}", "success")
             
-            # Add to screenshots list (at the beginning)
-            self.screenshots.insert(0, {
-                "image": screenshot,
-                "title": window_title,
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "path": file_path,
-                "base64": img_str,
-                "payload_json": payload_json,
-                "api_response": result
-            })
-            
-            # Clear existing screenshots from UI
-            for widget in self.screenshots_container.winfo_children():
-                widget.destroy()
-            
-            # Update the UI with all screenshots (newest first)
-            for i in range(len(self.screenshots)):
-                self.add_screenshot_to_ui(i)
-            
-            self.update_status(f"Captured {capture_type}: {window_title}", "success")
-        
-            logger.info(f"Captured {capture_type}: {window_title}")
+                logger.info(f"Captured {capture_type}: {window_title}")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
@@ -910,7 +914,8 @@ class ScreenshotApp:
         self.status_type = status_type
         
         if status_type == "success":
-            bg_color = self.colors["success"]
+            bg_color = '#03224c'
+            # bg_color = self.colors["success"]
             fg_color = self.colors["text_light"]
         elif status_type == "error":
             bg_color = self.colors["error"]
@@ -1078,14 +1083,16 @@ class ScreenshotApp:
     #         }
 
     #         response = requests.post(url, json=payload, headers=headers)
-            
-    #         response.raise_for_status()
+    #         print("Response:", response)  # Debugging line to check the response
+    #         print("Response:", response.status_code)  # Debugging line to check the response
+    #         if response.status_code == 201:
+    #             response.raise_for_status()
 
-    #         return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+    #             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
 
     #     except requests.exceptions.RequestException as e:
     #         print("The error is:", str(e))
-    #         return None
+    #         return "Unauthorized User:its seems you don't have permission, contact your admin"
 
     #     finally:
     #         self.hide_loader()  # Hide loader when API call is complete
