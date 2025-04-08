@@ -910,7 +910,8 @@ class ScreenshotApp:
         self.status_type = status_type
         
         if status_type == "success":
-            bg_color = self.colors["success"]
+            bg_color = '#03224c'
+            # bg_color = self.colors["success"]
             fg_color = self.colors["text_light"]
         elif status_type == "error":
             bg_color = self.colors["error"]
