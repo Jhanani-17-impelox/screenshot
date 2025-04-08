@@ -410,7 +410,7 @@ class ScreenshotApp:
         screenshots_frame = ttk.LabelFrame(main_frame, text="Captured Screenshots", padding=10)
         screenshots_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.canvas = tk.Canvas(screenshots_frame, bg="#F8DF7C")
+        self.canvas = tk.Canvas(screenshots_frame, bg="#f0f0f0")
         self.scrollbar = ttk.Scrollbar(screenshots_frame, orient=tk.VERTICAL, command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
