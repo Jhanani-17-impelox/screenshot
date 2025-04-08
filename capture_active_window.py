@@ -855,30 +855,30 @@ class ScreenshotApp:
                 self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
                 return
             else:
-                 self.save_payload_to_file(payload_json)
+                self.save_payload_to_file(payload_json)
             
-            # Add to screenshots list (at the beginning)
-            self.screenshots.insert(0, {
-                "image": screenshot,
-                "title": window_title,
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "path": file_path,
-                "base64": img_str,
-                "payload_json": payload_json,
-                "api_response": result
-            })
+                # Add to screenshots list (at the beginning)
+                self.screenshots.insert(0, {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    "base64": img_str,
+                    "payload_json": payload_json,
+                    "api_response": result
+                })
+                
+                # Clear existing screenshots from UI
+                for widget in self.screenshots_container.winfo_children():
+                    widget.destroy()
+                
+                # Update the UI with all screenshots (newest first)
+                for i in range(len(self.screenshots)):
+                    self.add_screenshot_to_ui(i)
+                
+                self.update_status(f"Captured {capture_type}: {window_title}", "success")
             
-            # Clear existing screenshots from UI
-            for widget in self.screenshots_container.winfo_children():
-                widget.destroy()
-            
-            # Update the UI with all screenshots (newest first)
-            for i in range(len(self.screenshots)):
-                self.add_screenshot_to_ui(i)
-            
-            self.update_status(f"Captured {capture_type}: {window_title}", "success")
-        
-            logger.info(f"Captured {capture_type}: {window_title}")
+                logger.info(f"Captured {capture_type}: {window_title}")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
