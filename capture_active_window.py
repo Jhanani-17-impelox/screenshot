@@ -1068,34 +1068,9 @@ class ScreenshotApp:
     def on_close(self):
         self.root.destroy()
         
-    # def make_api_call(self, payload):
-    #     self.show_loader()  # Show loader centered on the screen
-    #     try:
-    #         url = "http://localhost:8001/v1/chat"
-    #         headers = {
-    #             "Content-Type": "application/json",
-    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
-    #         }
-
-    #         response = requests.post(url, json=payload, headers=headers)
-            
-    #         response.raise_for_status()
-
-    #         return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-
-    #     except requests.exceptions.RequestException as e:
-    #         print("The error is:", str(e))
-    #         return None
-
-    #     finally:
-    #         self.hide_loader()  # Hide loader when API call is complete
-
-
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
-            # Comment out the original API call
-            """
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
@@ -1107,29 +1082,54 @@ class ScreenshotApp:
             response.raise_for_status()
 
             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-            """
-            
-            # Instead, generate a mock response
-            # time.sleep(1)  # Simulate API latency
-            mock_response = {
-                "inspector_notes": "Vehicle inspection completed on April 8, 2025. The vehicle appears to be in generally good condition with some minor issues noted. Regular maintenance has been performed according to service records.",
-                "engine_details": "2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. Oil level is adequate but due for change within 500 miles. Some oil seepage noted around valve cover gasket.",
-                "fault_accident": "Minor scrape on rear bumper, likely from parking incident. Driver side mirror shows signs of previous repair. No major accident damage detected. Check engine light intermittently appears according to owner.",
-                "has_engine_issue": True if random.random() > 0.7 else False  # Randomly return True ~30% of the time
-            }
-            return mock_response
 
-        except Exception as e:
-            logging.error(f"Error in mock API call: {str(e)}")
-            return {
-                "inspector_notes": "Error retrieving inspector notes.",
-                "engine_details": "Error retrieving engine details.",
-                "fault_accident": "Error retrieving fault/accident information.",
-                "has_engine_issue": False
-            }
+        except requests.exceptions.RequestException as e:
+            print("The error is:", str(e))
+            return None
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
+
+
+    # def make_api_call(self, payload):
+    #     self.show_loader()  # Show loader centered on the screen
+    #     try:
+    #         # Comment out the original API call
+    #         """
+    #         url = "http://localhost:8001/v1/chat"
+    #         headers = {
+    #             "Content-Type": "application/json",
+    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+    #         }
+
+    #         response = requests.post(url, json=payload, headers=headers)
+            
+    #         response.raise_for_status()
+
+    #         return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+    #         """
+            
+    #         # Instead, generate a mock response
+    #         # time.sleep(1)  # Simulate API latency
+    #         mock_response = {
+    #             "inspector_notes": "Vehicle inspection completed on April 8, 2025. The vehicle appears to be in generally good condition with some minor issues noted. Regular maintenance has been performed according to service records.",
+    #             "engine_details": "2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. Oil level is adequate but due for change within 500 miles. Some oil seepage noted around valve cover gasket.",
+    #             "fault_accident": "Minor scrape on rear bumper, likely from parking incident. Driver side mirror shows signs of previous repair. No major accident damage detected. Check engine light intermittently appears according to owner.",
+    #             "has_engine_issue": True if random.random() > 0.7 else False  # Randomly return True ~30% of the time
+    #         }
+    #         return mock_response
+
+    #     except Exception as e:
+    #         logging.error(f"Error in mock API call: {str(e)}")
+    #         return {
+    #             "inspector_notes": "Error retrieving inspector notes.",
+    #             "engine_details": "Error retrieving engine details.",
+    #             "fault_accident": "Error retrieving fault/accident information.",
+    #             "has_engine_issue": False
+    #         }
+
+    #     finally:
+    #         self.hide_loader()  # Hide loader when API call is complete
 
             
 if __name__ == "__main__":
