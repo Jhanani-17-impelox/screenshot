@@ -782,7 +782,6 @@ class ScreenshotApp:
         engine_details = api_response.get("engine_details", "No Engine Details available")
         fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
         has_engine_issue = api_response.get("has_engine_issue", False)
-        is_html_response = api_response.get("html_response", False)
 
         frame = ttk.Frame(self.screenshots_container)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
@@ -790,70 +789,36 @@ class ScreenshotApp:
         # --- Combined Box for All Information ---
         combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
         combined_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        if is_html_response:
-            # Generate HTML and display it
-            html_content = HTMLDisplay.generate_html_response(
-                inspector_notes, 
-                engine_details, 
-                fault_accident, 
-                has_engine_issue
-            )
-            html_display = HTMLDisplay(combined_frame, html_content, width=800)
-            html_display.pack(fill=tk.BOTH, expand=True)
-        else:
-            # Fall back to the original text-based display
-            # Inspector Notes section
-            inspector_label = ttk.Label(
-                combined_frame,
-                text="Inspector Notes:",
-                font=("Arial", 10, "bold"),
-                foreground=self.colors["primary"]
-            )
-            inspector_label.pack(anchor=tk.W)
-            inspector_content = ttk.Label(
-                combined_frame,
-                text=inspector_notes,
-                font=("Arial", 10),
-                wraplength=800,
-                justify=tk.LEFT
-            )
-            inspector_content.pack(anchor=tk.W, pady=(0, 10))
 
-            # Engine Details section
-            engine_label = ttk.Label(
-                combined_frame,
-                text="Engine Details:",
-                font=("Arial", 10, "bold"),
-                foreground=self.colors["primary"]
-            )
-            engine_label.pack(anchor=tk.W)
-            engine_content = ttk.Label(
-                combined_frame,
-                text=engine_details,
-                font=("Arial", 10),
-                wraplength=800,
-                justify=tk.LEFT,
-                foreground="red" if has_engine_issue else self.colors["text_dark"]
-            )
-            engine_content.pack(anchor=tk.W, pady=(0, 10))
+        # Render Inspector Notes
+        inspector_html = f"""
+        <div class="section">
+            <h3>Inspector Notes</h3>
+            {inspector_notes}
+        </div>
+        """
+        inspector_display = HTMLDisplay(combined_frame, inspector_html, width=800)
+        inspector_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
-            # Fault/Accident Details section
-            fault_label = ttk.Label(
-                combined_frame,
-                text="Fault/Accident Details:",
-                font=("Arial", 10, "bold"),
-                foreground=self.colors["primary"]
-            )
-            fault_label.pack(anchor=tk.W)
-            fault_content = ttk.Label(
-                combined_frame,
-                text=fault_accident,
-                font=("Arial", 10),
-                wraplength=800,
-                justify=tk.LEFT
-            )
-            fault_content.pack(anchor=tk.W)
+        # Render Engine Details
+        engine_html = f"""
+        <div class="section">
+            <h3>Engine Details</h3>
+            <p class="{'issue' if has_engine_issue else ''}">{engine_details}</p>
+        </div>
+        """
+        engine_display = HTMLDisplay(combined_frame, engine_html, width=800)
+        engine_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        # Render Fault/Accident Details
+        fault_html = f"""
+        <div class="section">
+            <h3>Fault/Accident Details</h3>
+            {fault_accident}
+        </div>
+        """
+        fault_display = HTMLDisplay(combined_frame, fault_html, width=800)
+        fault_display.pack(fill=tk.BOTH, expand=True)
 
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
@@ -866,10 +831,10 @@ class ScreenshotApp:
             thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
             photo = ImageTk.PhotoImage(thumbnail)
             screenshot_data["photo"] = photo
-            
+
             image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
             image_frame.pack(pady=5)
-            
+
             image_label = ttk.Label(image_frame, image=photo)
             image_label.image = photo
             image_label.pack()
@@ -877,7 +842,7 @@ class ScreenshotApp:
         # --- Header for Open Button ---
         title_frame = ttk.Frame(frame)
         title_frame.pack(fill=tk.X)
-        
+
         title_label = ttk.Label(
             title_frame,
             text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
@@ -885,16 +850,16 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         title_label.pack(side=tk.LEFT, pady=5)
-        
+
         open_button = ttk.Button(
             title_frame,
             text="Open Image",
             command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
         )
         open_button.pack(side=tk.RIGHT, padx=5)
-        
+
         self.on_frame_configure(None)
-        
+
     def open_screenshot(self, path):
         try:
             if platform.system() == 'Windows':
