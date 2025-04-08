@@ -14,6 +14,7 @@ import json
 import uuid
 import requests
 import re
+import _json
 from itertools import cycle
 
 class MarkdownText(tk.Text):
@@ -1011,10 +1012,10 @@ class ScreenshotApp:
             }
 
             response = requests.post(url, json=payload, headers=headers)
-            print(response,'============response============')
+            
             response.raise_for_status()
 
-            return response.json().get("assistant_message")
+            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
 
         except requests.exceptions.RequestException as e:
             print("The error is:", str(e))
