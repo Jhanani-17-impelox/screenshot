@@ -1079,7 +1079,7 @@ class ScreenshotApp:
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                'x-api-key': 'your-api-key-here'  # Replace with your actual API key
             }
 
             response = requests.post(url, json=payload, headers=headers)
@@ -1106,7 +1106,7 @@ class ScreenshotApp:
     #         url = "http://localhost:8001/v1/chat"
     #         headers = {
     #             "Content-Type": "application/json",
-    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+    #             'x-api-key': 'your-api-key-here'  # Replace with your actual API key
     #         }
 
     #         response = requests.post(url, json=payload, headers=headers)
