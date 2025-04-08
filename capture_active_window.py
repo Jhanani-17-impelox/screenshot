@@ -14,8 +14,18 @@ import json
 import uuid
 import requests
 import re
-import _json
 from itertools import cycle
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename='screenshot_app.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# Create a logger object
+logger = logging.getLogger(__name__)
 
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
@@ -291,6 +301,8 @@ class MarkdownText(tk.Text):
             line_remaining = line_remaining[end:]
 class ScreenshotApp:
     def __init__(self, root):
+        logger.info("ScreenshotApp initialized.")
+    
         
         self.root = root
         self.root.title("Taro ")
@@ -372,8 +384,11 @@ class ScreenshotApp:
         try:
             with open(self.payload_file, 'w') as f:
                 json.dump(payload, f, indent=2)
+            logger.info(f"Payload saved to {self.payload_file}")
+
             self.update_status(f"Payload saved to {self.payload_file}", "success")
         except Exception as e:
+            logging.error(f"Error saving payload: {str(e)}") 
             self.update_status(f"Error saving payload: {str(e)}", "error")
 
     def setup_icon(self):
@@ -381,8 +396,9 @@ class ScreenshotApp:
             icon = Image.new('RGB', (16, 16), color=self.colors["primary"])
             photo = ImageTk.PhotoImage(icon)
             self.root.iconphoto(False, photo)
-        except Exception:
-            pass
+
+        except Exception as e:
+            logging.error(f"Error setting up icon: {str(e)}")
     
     def create_main_layout(self):
         main_frame = ttk.Frame(self.root, padding=10)
@@ -491,6 +507,7 @@ class ScreenshotApp:
                     command=self.handle_capture
                 )
         except Exception as e:
+            logging.error(f"Error creating capture button: {str(e)}")
             capture_button = tk.Button(
                 inner_frame,
                 text="📷",
@@ -600,7 +617,9 @@ class ScreenshotApp:
 
     def handle_capture(self):
         if self.is_capturing:
+            logger.info("Capture already in progress.")
             return
+        logger.info("Starting capture process.")
             
         capture_thread = threading.Thread(target=self.capture_active_window)
         capture_thread.daemon = True
@@ -628,6 +647,7 @@ class ScreenshotApp:
                 
                 return title, bounds
             except Exception as e:
+                print(f"Error getting window info on Windows: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Darwin':  # macOS
@@ -656,6 +676,7 @@ class ScreenshotApp:
                 bounds = [int(val) for val in result.split(',')]
                 return title, tuple(bounds)
             except Exception as e:
+                logging.error(f"Error getting window info on macOS: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Linux':
@@ -683,21 +704,26 @@ class ScreenshotApp:
                 
                 return title, (x, y, width, height)
             except Exception as e:
+                logging.error(f"Error getting window info on Linux: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
-        
+            
+        logging.warning("Unknown operating system. Returning default window info.")
         return f"Window_{datetime.now().strftime('%H%M%S')}", None
     
     def capture_active_window(self):
         self.is_capturing = True
         self.show_loader()  # Show loader centered on the screen
+        logger.info("Loader shown for capture process.")
 
         try:
             self.root.withdraw()
             self.button_window.withdraw()
+            logger.info("Windows hidden for capture.")
             
             time.sleep(0.5)
             
             window_title, window_bounds = self.get_window_info()
+            logger.info(f"Captured window title: {window_title}")
             
             if "Taro " in window_title or not window_title:
                 self.root.deiconify()
@@ -710,6 +736,7 @@ class ScreenshotApp:
             # Take high-resolution screenshot
             if window_bounds:
                 x, y, width, height = window_bounds
+                logger.info(f"Window bounds: {window_bounds}")
                 
                 if width <= 0 or height <= 0:
                     self.root.deiconify()
@@ -721,6 +748,9 @@ class ScreenshotApp:
                 
                 screenshot = pyautogui.screenshot(region=(x, y, width, height))
                 capture_type = "active window"
+
+                logger.info("Screenshot taken for active window.")
+
             else:
                 if platform.system() == 'Windows':
                     try:
@@ -759,12 +789,17 @@ class ScreenshotApp:
                         win32gui.ReleaseDC(hwnd, hwndDC)
                         
                         capture_type = "active window"
-                    except Exception:
+                    except Exception as e:
+                        logging.error(f"Error capturing active window on Windows: {e}")
                         screenshot = pyautogui.screenshot()
                         capture_type = "full screen (fallback)"
                 else:
+
+                    logger.warning("Falling back to full screen capture.")
+                    
                     screenshot = pyautogui.screenshot()
                     capture_type = "full screen (fallback)"
+
             
             self.root.deiconify()
             self.button_window.deiconify()
@@ -838,7 +873,10 @@ class ScreenshotApp:
             
             self.update_status(f"Captured {capture_type}: {window_title}", "success")
         
+            logger.info(f"Captured {capture_type}: {window_title}")
+
         except Exception as e:
+            logging.error(f"Error capturing screenshot: {str(e)}")
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
         
         finally:
@@ -983,6 +1021,8 @@ class ScreenshotApp:
                 import subprocess
                 subprocess.call(['xdg-open', path])
         except Exception as e:
+            logging.error(f"Error opening screenshot: {str(e)}")
+            # Update status with error message
             self.update_status(f"Error opening screenshot: {str(e)}", "error")
 
             
@@ -997,6 +1037,7 @@ class ScreenshotApp:
                 import subprocess
                 subprocess.call(['xdg-open', self.temp_dir])
         except Exception as e:
+            logging.error(f"Error opening screenshots folder: {str(e)}")
             self.update_status(f"Error opening folder: {str(e)}", "error")
     
     def on_close(self):
