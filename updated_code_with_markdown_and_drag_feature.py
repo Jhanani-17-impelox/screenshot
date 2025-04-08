@@ -14,14 +14,18 @@ import json
 import uuid
 import requests
 import re
-import logging  # Import logging module
+from itertools import cycle
+import logging
 
 # Configure logging
 logging.basicConfig(
-    filename='screenshot_app.log',  # Log file name
-    level=logging.DEBUG,  # Set the logging level
-    format='%(asctime)s - %(levelname)s - %(message)s'  # Log message format
+    filename='screenshot_app.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+# Create a logger object
+logger = logging.getLogger(__name__)
 
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
@@ -297,9 +301,11 @@ class MarkdownText(tk.Text):
             line_remaining = line_remaining[end:]
 class ScreenshotApp:
     def __init__(self, root):
+        logger.info("ScreenshotApp initialized.")
+    
         
         self.root = root
-        self.root.title("Taro san")
+        self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
 
@@ -378,20 +384,21 @@ class ScreenshotApp:
         try:
             with open(self.payload_file, 'w') as f:
                 json.dump(payload, f, indent=2)
-            self.update_status(f"Payload saved to {self.payload_file}", "success")
-            logging.info(f"Payload saved to {self.payload_file}")  # Log success
+            logger.info(f"Payload saved to {self.payload_file}")
 
+            self.update_status(f"Payload saved to {self.payload_file}", "success")
         except Exception as e:
+            logging.error(f"Error saving payload: {str(e)}") 
             self.update_status(f"Error saving payload: {str(e)}", "error")
-            logging.error(f"Error saving payload: {str(e)}")  # Log error
 
     def setup_icon(self):
         try:
             icon = Image.new('RGB', (16, 16), color=self.colors["primary"])
             photo = ImageTk.PhotoImage(icon)
             self.root.iconphoto(False, photo)
-        except Exception:
-            logging.error(f"Error setting up icon: {str(e)}")  # Log error
+
+        except Exception as e:
+            logging.error(f"Error setting up icon: {str(e)}")
     
     def create_main_layout(self):
         main_frame = ttk.Frame(self.root, padding=10)
@@ -399,7 +406,7 @@ class ScreenshotApp:
         
         title_label = ttk.Label(
             main_frame, 
-            text="Taro san", 
+            text="Taro ", 
             font=("Arial", 18, "bold"),
             foreground=self.colors["primary"]
         )
@@ -420,12 +427,8 @@ class ScreenshotApp:
         screenshots_frame = ttk.LabelFrame(main_frame, text="Captured Screenshots", padding=10)
         screenshots_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.canvas_frame = ttk.Frame(screenshots_frame)
-        self.canvas_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.canvas = tk.Canvas(self.canvas_frame, bg="#ffffff")
-        self.scrollbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        
+        self.canvas = tk.Canvas(screenshots_frame, bg="#F8DF7C")
+        self.scrollbar = ttk.Scrollbar(screenshots_frame, orient=tk.VERTICAL, command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -435,29 +438,27 @@ class ScreenshotApp:
         self.screenshots_container_id = self.canvas.create_window(
             (0, 0), 
             window=self.screenshots_container, 
-            anchor=tk.NW,
-            width=self.canvas.winfo_width()
+            anchor=tk.NW
         )
         
         self.canvas.bind("<Configure>", self.on_canvas_configure)
         self.screenshots_container.bind("<Configure>", self.on_frame_configure)
-        
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill=tk.X, pady=(10, 0))
-        
-        open_folder_button = ttk.Button(
-            button_frame,
-            text="Open Screenshots Folder",
-            command=self.open_screenshots_folder
-        )
-        open_folder_button.pack(side=tk.RIGHT)
-    
+
+        # Bind mouse wheel scrolling
+        self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+
     def on_canvas_configure(self, event):
+        """Adjust the canvas width to match the container"""
         self.canvas.itemconfig(self.screenshots_container_id, width=event.width)
-    
+
     def on_frame_configure(self, event):
+        """Update the scroll region to encompass the entire frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-    
+
+    def on_mouse_wheel(self, event):
+        """Scroll the canvas vertically when the mouse wheel is used"""
+        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
     def create_floating_button(self):
         self.button_window = tk.Toplevel(self.root)
         self.button_window.overrideredirect(True)
@@ -506,8 +507,7 @@ class ScreenshotApp:
                     command=self.handle_capture
                 )
         except Exception as e:
-            logging.error(f"Error creating capture button: {str(e)}")  # Log error
-
+            logging.error(f"Error creating capture button: {str(e)}")
             capture_button = tk.Button(
                 inner_frame,
                 text="📷",
@@ -581,9 +581,45 @@ class ScreenshotApp:
         if not self.is_capturing:
             self.handle_capture()
     
+    def create_loader(self, parent):
+        """Create a localized loader overlay with a spinning animation centered on the screen"""
+        self.loader_frame = tk.Frame(parent, bg="#2D617F", relief="solid", bd=2)
+        self.loader_frame.place(relx=0.5, rely=0.5, anchor="center", width=100, height=100)
+
+        self.spinner_label = ttk.Label(self.loader_frame, background="#2D617F")
+        self.spinner_label.pack(expand=True)
+
+        # Create spinning animation
+        self.spinner_images = [
+            ImageTk.PhotoImage(Image.new("RGB", (50, 50), (255, 255, 255)).rotate(angle))
+            for angle in range(0, 360, 30)
+        ]
+        self.spinner_cycle = cycle(self.spinner_images)
+        self.animate_spinner()
+
+    def animate_spinner(self):
+        """Animate the spinner"""
+        if hasattr(self, "spinner_label"):
+            self.spinner_label.config(image=next(self.spinner_cycle))
+            self.spinner_label.after(100, self.animate_spinner)
+
+    def show_loader(self):
+        """Show the loader centered on the screen"""
+        if not hasattr(self, "loader_frame"):
+            self.create_loader(self.root)  # Use the root window as the parent
+        self.loader_frame.lift()
+        self.loader_frame.place(relx=0.5, rely=0.5, anchor="center", width=60, height=60)
+
+    def hide_loader(self):
+        """Hide the loader"""
+        if hasattr(self, "loader_frame"):
+            self.loader_frame.place_forget()
+
     def handle_capture(self):
         if self.is_capturing:
+            logger.info("Capture already in progress.")
             return
+        logger.info("Starting capture process.")
             
         capture_thread = threading.Thread(target=self.capture_active_window)
         capture_thread.daemon = True
@@ -611,7 +647,7 @@ class ScreenshotApp:
                 
                 return title, bounds
             except Exception as e:
-                logging.error(f"Error getting window info on Windows: {str(e)}")  # Log error
+                print(f"Error getting window info on Windows: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Darwin':  # macOS
@@ -640,7 +676,7 @@ class ScreenshotApp:
                 bounds = [int(val) for val in result.split(',')]
                 return title, tuple(bounds)
             except Exception as e:
-                logging.error(f"Error getting window info on macOS: {str(e)}")  # Log error
+                logging.error(f"Error getting window info on macOS: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Linux':
@@ -668,45 +704,53 @@ class ScreenshotApp:
                 
                 return title, (x, y, width, height)
             except Exception as e:
-                logging.error(f"Error getting window info on Linux: {str(e)}")  # Log error
+                logging.error(f"Error getting window info on Linux: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
-        
-        logging.warning("Unknown operating system, returning default window info.")    
+            
+        logging.warning("Unknown operating system. Returning default window info.")
         return f"Window_{datetime.now().strftime('%H%M%S')}", None
     
     def capture_active_window(self):
         self.is_capturing = True
-        
+        self.show_loader()  # Show loader centered on the screen
+        logger.info("Loader shown for capture process.")
+
         try:
             self.root.withdraw()
             self.button_window.withdraw()
+            logger.info("Windows hidden for capture.")
             
             time.sleep(0.5)
             
             window_title, window_bounds = self.get_window_info()
+            logger.info(f"Captured window title: {window_title}")
             
-            if "Taro san" in window_title or not window_title:
+            if "Taro " in window_title or not window_title:
                 self.root.deiconify()
                 self.button_window.deiconify()
                 self.update_status("No active window detected or captured our own app", "info")
-                logging.info("No active window detected or captured our own app")
                 self.is_capturing = False
+                self.hide_loader()  # Hide loader on failure
                 return
             
             # Take high-resolution screenshot
             if window_bounds:
                 x, y, width, height = window_bounds
+                logger.info(f"Window bounds: {window_bounds}")
                 
                 if width <= 0 or height <= 0:
                     self.root.deiconify()
                     self.button_window.deiconify()
                     self.update_status("Invalid window dimensions detected", "error")
-                    logging.error("Invalid window dimensions detected")
                     self.is_capturing = False
+                    self.hide_loader()  # Hide loader on failure
                     return
                 
                 screenshot = pyautogui.screenshot(region=(x, y, width, height))
                 capture_type = "active window"
+
+                logger.info("Screenshot taken for active window.")
+
             else:
                 if platform.system() == 'Windows':
                     try:
@@ -746,12 +790,16 @@ class ScreenshotApp:
                         
                         capture_type = "active window"
                     except Exception as e:
-                        logging.error(f"Error capturing active window on Windows: {str(e)}")  # Log error
+                        logging.error(f"Error capturing active window on Windows: {e}")
                         screenshot = pyautogui.screenshot()
                         capture_type = "full screen (fallback)"
                 else:
+
+                    logger.warning("Falling back to full screen capture.")
+                    
                     screenshot = pyautogui.screenshot()
                     capture_type = "full screen (fallback)"
+
             
             self.root.deiconify()
             self.button_window.deiconify()
@@ -763,18 +811,19 @@ class ScreenshotApp:
             
             # Save original high-resolution image
             screenshot.save(file_path, quality=95)
-            logging.info(f"Screenshot saved to {file_path}")  # Log success
             
             # Compress image for base64 encoding
             compressed_img = self.compress_image(screenshot)
             
             # Convert screenshot to base64
             buffered = BytesIO()
+            # screenshot.save(buffered, format="PNG", optimize=True)
             compressed_img.save(buffered, format="PNG", optimize=True)
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             
             # Add data URI prefix to base64 string
-            img_str = f"data:image/png;base64,{img_str_raw}"
+            # img_str = f"data:image/png;base64,{img_str_raw}"
+            img_str =img_str_raw
             
             # Create JSON payload with the base64 image
             session_id = str(uuid.uuid4())
@@ -787,7 +836,7 @@ class ScreenshotApp:
                 "conversation_history": [
                     {
                         "role": "user",
-                        "content": "get only the Inspector's Notes and Engine description from this image",
+                        "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
                         "attachments": [
                             {
                                 "type": "file",
@@ -799,7 +848,7 @@ class ScreenshotApp:
             }
             
             # Comment out the API call and use mock response
-            # result = self.make_api_call(payload_json)
+            result = self.make_api_call(payload_json)
             # Mock response for API call with markdown formatting
             mock_response = """# Inspector's Notes
 **Date**: April 4, 2025
@@ -815,7 +864,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
 
 [More information](https://example.com)
 """
-            
+                   
             self.save_payload_to_file(payload_json)
             
             # Add to screenshots list (at the beginning)
@@ -826,7 +875,9 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 "path": file_path,
                 "base64": img_str,
                 "payload_json": payload_json,
-                "api_response": mock_response
+                "api_response": result
+                # "api_response": mock_response
+
             })
             
             # Clear existing screenshots from UI
@@ -838,14 +889,16 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 self.add_screenshot_to_ui(i)
             
             self.update_status(f"Captured {capture_type}: {window_title}", "success")
-            logging.info(f"Captured {capture_type}: {window_title}")  # Log success
         
+            logger.info(f"Captured {capture_type}: {window_title}")
+
         except Exception as e:
+            logging.error(f"Error capturing screenshot: {str(e)}")
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
-            logging.error(f"Error capturing screenshot: {str(e)}")  # Log error
         
         finally:
             self.is_capturing = False
+            self.hide_loader()  # Hide loader when capture is complete
     
     def compress_image(self, image, quality=40, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
@@ -893,45 +946,47 @@ This is an example of *formatted markdown* text that will be displayed properly 
         
         # Check if API response exists
         response_text = screenshot_data.get("api_response", "No API response available")
-        
+
         frame = ttk.Frame(self.screenshots_container)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
-        
+
         # --- API Response Card ---
         response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
         response_card.pack(fill=tk.X, padx=5, pady=5)
-        
-        # --- Header with Icon ---
-        header_frame = ttk.Frame(response_card)
-        header_frame.pack(fill=tk.X, pady=(0, 5))
-        
-        icon_label = ttk.Label(header_frame, text="📜", font=("Arial", 14))
-        icon_label.pack(side=tk.LEFT, padx=(5, 5))
-        
-        response_label = ttk.Label(
-            header_frame, 
-            text="API Response", 
-            font=("Arial", 12, "bold"), 
-            foreground=self.colors["primary"]
-        )
-        response_label.pack(side=tk.LEFT)
+
+        # --- Scrollable Text Container ---
+        text_frame = ttk.Frame(response_card)
+        text_frame.pack(fill=tk.BOTH, expand=True)
+
+        # --- Scrollbars ---
+        v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
         
         # --- Response Content with Markdown Formatting ---
         response_content = MarkdownText(
-            response_card,
-            wrap=tk.WORD,
-            height=10,
+            text_frame,
+            wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
+            height=20,  # Default height
             width=70,
-            font=("Courier", 10),
-            bg="#f8f9fa",
+            font=("Segoe UI", 10),
+            bg="#DBEAF7",
             relief=tk.FLAT,
             padx=10,
-            pady=5
+            pady=5,
+            yscrollcommand=v_scrollbar.set,
+          
         )
-        response_content.insert_markdown(response_text)
-        response_content.config(state=tk.DISABLED)  # Make it read-only
-        response_content.pack(fill=tk.BOTH, expand=True)
         
+        # Insert Markdown text
+        response_content.insert_markdown(response_text)
+        
+        response_content.config(state=tk.DISABLED)  # Make it read-only
+
+        # Pack elements
+        v_scrollbar.config(command=response_content.yview)
+      
+        response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+      
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
         if img:
@@ -983,8 +1038,9 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 import subprocess
                 subprocess.call(['xdg-open', path])
         except Exception as e:
-            self.update_status(f"Error opening screenshot: {str(e)}", "error")
             logging.error(f"Error opening screenshot: {str(e)}")
+            # Update status with error message
+            self.update_status(f"Error opening screenshot: {str(e)}", "error")
 
             
     def open_screenshots_folder(self):
@@ -998,15 +1054,22 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 import subprocess
                 subprocess.call(['xdg-open', self.temp_dir])
         except Exception as e:
+            logging.error(f"Error opening screenshots folder: {str(e)}")
             self.update_status(f"Error opening folder: {str(e)}", "error")
-            logging.error(f"Error opening folder: {str(e)}")
     
     def on_close(self):
         self.root.destroy()
         
+    # def make_api_call(self, payload):
+    #     self.show_loader()  # Show loader centered on the screen
+    #     mock_response = "This is a mock response since the API is non-functional."
+    
+    #     self.hide_loader()  # Hide loader when API call is complete
+    #     logger.info("Mock API response returned.")
+    #     return mock_response
+
     def make_api_call(self, payload):
-        # This function is commented out - using mock response instead
-        """
+        self.show_loader()  # Show loader centered on the screen
         try:
             url = "http://localhost:8001/v1/chat"
             headers = {
@@ -1021,11 +1084,14 @@ This is an example of *formatted markdown* text that will be displayed properly 
         except requests.exceptions.RequestException as e:
             print("The error is:", str(e))
             return None
-        """
-        mock_response = "This is a mock response since the API is non-functional."
-        return mock_response
+
+        finally:
+            self.hide_loader()  # Hide loader when API call is complete
+
+
+    
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = ScreenshotApp(root)
-    root.mainloop()  
+    root.mainloop()
