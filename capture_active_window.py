@@ -1079,7 +1079,7 @@ class ScreenshotApp:
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'emomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
             response = requests.post(url, json=payload, headers=headers)
