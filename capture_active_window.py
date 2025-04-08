@@ -1,3 +1,5 @@
+###############this is the first 575 lines of code################
+
 import random
 import tkinter as tk
 from tkinter import ttk, scrolledtext
@@ -28,278 +30,116 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger(__name__)
 
-class MarkdownText(tk.Text):
-    """A Text widget with improved Markdown rendering capabilities"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tag_configure("bold", font=("Courier", 10, "bold"))
-        self.tag_configure("italic", font=("Courier", 10, "italic"))
-        self.tag_configure("heading1", font=("Courier", 14, "bold"))
-        self.tag_configure("heading2", font=("Courier", 12, "bold"))
-        self.tag_configure("heading3", font=("Courier", 11, "bold"))
-        self.tag_configure("code", background="#f0f0f0", font=("Courier", 9))
-        self.tag_configure("bullet", lmargin1=20, lmargin2=30)
-        self.tag_configure("link", foreground="blue", underline=1)
+# Add these imports at the top of your file
+import webbrowser
+from tkhtmlview import HTMLLabel, HTMLScrolledText, RenderHTML
 
-        # Table styling with background colors
-        self.tag_configure("table_border", foreground="#555555")
-        self.tag_configure("table_header", 
-                        font=("Courier", 10, "bold"), 
-                        foreground="#000000",
-                        background="#e1e5eb")  # Light gray background for header
-        self.tag_configure("table_row_even", 
-                        foreground="#333333",
-                        background="#f5f7fa")  # Very light gray for even rows
-        self.tag_configure("table_row_odd", 
-                        foreground="#333333",
-                        background="#ffffff")  # White for odd rows
-
-    def insert_markdown(self, text):
-        """Parse and insert markdown text"""
-        # Clear current content
-        self.delete(1.0, tk.END)
+class HTMLDisplay:
+    """A class to handle HTML rendering in the Tkinter app"""
+    def __init__(self, parent, html_content, width=800, height=None, padx=10, pady=10):
+        self.parent = parent
+        self.html_content = self._strip_styles(html_content)  # Remove styles from HTML content
         
-        # Process lines
-        code_block = False
-        bullet_list = False
-        table_mode = False
-        table_rows = []
+        # Create the HTML display widget
+        self.html_widget = HTMLScrolledText(
+            parent, 
+            html=self.html_content,
+            width=width,
+            height=height,
+            padx=padx,
+            pady=pady
+        )
         
-        lines = text.split('\n')
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            
-            # Code blocks
-            if line.strip().startswith('```'):
-                code_block = not code_block
-                if not code_block:  # End of code block
-                    self.insert(tk.END, '\n')
-                i += 1
-                continue
-            
-            if code_block:
-                self.insert(tk.END, line + '\n', "code")
-                i += 1
-                continue
-            
-            # Table detection
-            if line.strip().startswith('|') and '|' in line[1:]:
-                if not table_mode:
-                    table_mode = True
-                    table_rows = []
-                
-                table_rows.append(line)
-                i += 1
-                
-                # Check if next line is a separator line or if this is the end of the table
-                if i < len(lines) and lines[i].strip().startswith('|') and '-' in lines[i]:
-                    table_rows.append(lines[i])
-                    i += 1
-                    continue
-                
-                # Peek ahead to see if the table continues
-                if i < len(lines) and lines[i].strip().startswith('|'):
-                    continue
-                else:
-                    # Process the complete table
-                    self.process_table(table_rows)
-                    table_mode = False
-                    continue
-            
-            # Headings
-            if line.strip().startswith('# '):
-                self.insert(tk.END, line[2:] + '\n', "heading1")
-                i += 1
-                continue
-            elif line.strip().startswith('## '):
-                self.insert(tk.END, line[3:] + '\n', "heading2")
-                i += 1
-                continue
-            elif line.strip().startswith('### '):
-                self.insert(tk.END, line[4:] + '\n', "heading3")
-                i += 1
-                continue
-            
-            # Bullet lists
-            if line.strip().startswith('- ') or line.strip().startswith('* '):
-                bullet_list = True
-                self.insert(tk.END, '• ' + line[2:].strip() + '\n', "bullet")
-                i += 1
-                continue
-            
-            # Process inline formatting
-            self.process_inline_markdown(line)
-            self.insert(tk.END, '\n')
-            bullet_list = False
-            i += 1
-    
-    def process_table(self, table_rows):
-        """Process and render a markdown table with improved formatting"""
-        # Parse table structure
-        rows = []
-        is_header = True
-        column_alignments = []
         
-        for row_idx, row in enumerate(table_rows):
-            # Skip empty rows
-            if not row.strip():
-                continue
-                
-            # Check if this is a separator row (|---|---|)
-            if row.strip().replace('|', '').replace('-', '').replace(':', '').strip() == '':
-                # This is a separator row - parse alignments
-                cells = row.strip().split('|')[1:-1]  # Skip first and last empty
-                alignments = []
-                
-                for cell in cells:
-                    cell = cell.strip()
-                    if cell.startswith(':') and cell.endswith(':'):
-                        alignments = 'center'
-                    elif cell.startswith(':'):
-                        alignments = 'left'
-                    elif cell.endswith(':'):
-                        alignments = 'right'
-                    else:
-                        alignments = 'left'  # Default alignment
-                    column_alignments.append(alignments)
-                    
-                is_header = False
-                continue
-                
-            # Process cells in the row
-            cells = []
-            for cell in row.strip().split('|')[1:-1]:  # Skip the first and last empty cells
-                # Process any markdown in the cell
-                cells.append(cell.strip())
-            
-            rows.append((cells, is_header))
-            is_header = False
+        # Configure styling and disable editing
+        self.html_widget.configure(
+            font=("Arial", 10),
+            cursor="arrow",
+            background="#ffffff",
+            state="disabled"  # Make the widget uneditable
+        )
         
-        if not rows:
-            return
         
-        # Calculate column widths based on content
-        col_count = max(len(row[0]) for row in rows)
-        col_widths = [0] * col_count
+    def pack(self, **kwargs):
+        """Pack the HTML widget with the specified options"""
+        self.html_widget.pack(**kwargs)
         
-        for row, _ in rows:
-            for i, cell in enumerate(row):
-                if i < col_count:
-                    # Account for markdown characters in width calculation
-                    clean_cell = re.sub(r'\*\*(.*?)\*\*', r'\1', cell)  # Remove bold
-                    clean_cell = re.sub(r'\*(.*?)\*', r'\1', clean_cell)  # Remove italic
-                    col_widths[i] = max(col_widths[i], len(clean_cell))
-        
-        # Set minimum column width
-        min_col_width = 8
-        col_widths = [max(w, min_col_width) for w in col_widths]
-        
-        # Render table with borders
-        self.insert(tk.END, "\n")
-        
-        # Render top border
-        top_border = "┌"
-        for i, width in enumerate(col_widths):
-            top_border += "─" * (width + 2)
-            if i < len(col_widths) - 1:
-                top_border += "┬"
-        top_border += "┐\n"
-        self.insert(tk.END, top_border, "table_border")
-        
-        # Render rows
-        for row_idx, (cells, is_header) in enumerate(rows):
-            row_text = "│"
-            
-            for i, cell in enumerate(cells):
-                if i >= col_count:
-                    continue
-                    
-                # Clean cell content from markdown for alignment
-                clean_cell = re.sub(r'\*\*(.*?)\*\*', r'\1', cell)
-                clean_cell = re.sub(r'\*(.*?)\*', r'\1', clean_cell)
-                
-                # Apply alignment
-                alignment = column_alignments[i] if i < len(column_alignments) else 'left'
-                cell_width = col_widths[i]
-                
-                if alignment == 'left':
-                    padded_cell = clean_cell.ljust(cell_width)
-                elif alignment == 'right':
-                    padded_cell = clean_cell.rjust(cell_width)
-                else:  # center
-                    padded_cell = clean_cell.center(cell_width)
-                
-                # Restore markdown formatting
-                formatted_cell = cell.replace(clean_cell, padded_cell)
-                
-                # Add cell to row
-                row_text += " " + formatted_cell + " │"
-            
-            # Insert the row with appropriate tag
-            if is_header:
-                self.insert(tk.END, row_text + "\n", "table_header")
-                
-                # Add header separator
-                sep_row = "├"
-                for i, width in enumerate(col_widths):
-                    sep_row += "─" * (width + 2)
-                    if i < len(col_widths) - 1:
-                        sep_row += "┼"
-                sep_row += "┤\n"
-                self.insert(tk.END, sep_row, "table_border")
-            else:
-                tag = "table_row_even" if row_idx % 2 == 0 else "table_row_odd"
-                self.insert(tk.END, row_text + "\n", tag) 
-        # Render bottom border
-        bottom_border = "└"
-        for i, width in enumerate(col_widths):
-            bottom_border += "─" * (width + 2)
-            if i < len(col_widths) - 1:
-                bottom_border += "┴"
-        bottom_border += "┘\n"
-        self.insert(tk.END, bottom_border, "table_border")
-        
-        self.insert(tk.END, "\n")
+    def update_html(self, new_html):
+        """Update the HTML content"""
+        self.html_content = self._strip_styles(new_html)  # Remove styles from new HTML content
+        self.html_widget.set_html(self.html_content)
+        self.html_widget.configure(state="disabled")  # Ensure it remains uneditable
 
 
-    def process_inline_markdown(self, line):
-        """Process inline markdown elements like bold, italic, and links"""
-        line_remaining = line
+    @staticmethod
+    def _strip_styles(html_content):
+        """Remove style definitions from the HTML content"""
+        import re
+        return re.sub(r"<style>.*?</style>", "", html_content, flags=re.DOTALL)
+
+
+    @staticmethod
+    def generate_html_response(inspector_notes, engine_details, fault_accident, has_engine_issue=False):
+        """Generate formatted HTML for the response"""
         
-        while line_remaining:
-            # Find the first occurrence of each pattern
-            bold_match = re.search(r'\*\*(.*?)\*\*', line_remaining)
-            italic_match = re.search(r'\*(.*?)\*', line_remaining)
-            link_match = re.search(r'\[(.*?)\]\((.*?)\)', line_remaining)
+        # Define styles for the HTML content
+        engine_color = "#cc0000" if has_engine_issue else "#333333"
+        
+        html = f"""
+        <html>
+        <head>
+        <style>
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                color: #333333;
+                margin: 0;
+                padding: 0;
+            }}
+            .section {{
+                margin-bottom: 15px;
+                padding: 0;
+            }}
+            h3 {{
+                color: #4a6baf;
+                margin: 10px 0 5px 0;
+                padding: 0;
+                font-size: 14px;
+                border-bottom: 1px solid #e1e5eb;
+            }}
+            p {{
+                margin: 5px 0;
+                line-height: 1.4;
+                text-align: justify;
+            }}
+            .issue {{
+                color: {engine_color};
+            }}
+            .highlight {{
+                background-color: #fff3cd;
+                padding: 2px;
+            }}
+        </style>
+        </head>
+        <body>
+            <div class="section">
+                <h3>Inspector Notes</h3>
+                <p>{inspector_notes}</p>
+            </div>
             
-            # Determine which pattern comes first, if any
-            matches = []
-            if bold_match:
-                matches.append(('bold', bold_match.start(), bold_match.end(), bold_match.group(1)))
-            if italic_match:
-                matches.append(('italic', italic_match.start(), italic_match.end(), italic_match.group(1)))
-            if link_match:
-                matches.append(('link', link_match.start(), link_match.end(), bold_match.group(1)))
+            <div class="section">
+                <h3>Engine Details</h3>
+                <p class="issue">{engine_details}</p>
+            </div>
             
-            # If no matches, insert remaining text and exit
-            if not matches:
-                self.insert(tk.END, line_remaining)
-                break
-            
-            # Sort matches by start position
-            matches.sort(key=lambda x: x[1])
-            match_type, start, end, content = matches[0]
-            
-            # Insert text before the match
-            if start > 0:
-                self.insert(tk.END, line_remaining[:start])
-            
-            # Insert matched content with appropriate tag
-            self.insert(tk.END, content, match_type)
-            
-            # Update remaining line
-            line_remaining = line_remaining[end:]
+            <div class="section">
+                <h3>Fault/Accident Details</h3>
+                <p>{fault_accident}</p>
+            </div>
+        </body>
+        </html>
+        """
+        return html
+
 class ScreenshotApp:
     def __init__(self, root):
         logger.info("ScreenshotApp initialized.")
@@ -572,6 +412,9 @@ class ScreenshotApp:
         y = self.button_window.winfo_y() + deltay
         self.button_window.geometry(f"+{x}+{y}")
 
+
+
+###########this is the next 575 lines of code#####################
     # Add new methods for button press and release specifically
     def button_press(self, event):
         # Just for the actual button - no drag logic here
@@ -929,7 +772,7 @@ class ScreenshotApp:
             background=bg_color,
             foreground=fg_color
         )
-
+        
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
         
@@ -939,6 +782,7 @@ class ScreenshotApp:
         engine_details = api_response.get("engine_details", "No Engine Details available")
         fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
         has_engine_issue = api_response.get("has_engine_issue", False)
+        is_html_response = api_response.get("html_response", False)
 
         frame = ttk.Frame(self.screenshots_container)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
@@ -947,57 +791,69 @@ class ScreenshotApp:
         combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
         combined_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        # Inspector Notes section
-        inspector_label = ttk.Label(
-            combined_frame,
-            text="Inspector Notes:",
-            font=("Arial", 10, "bold"),
-            foreground=self.colors["primary"]
-        )
-        inspector_label.pack(anchor=tk.W)
-        inspector_content = ttk.Label(
-            combined_frame,
-            text=inspector_notes,
-            font=("Arial", 10),
-            wraplength=800,
-            justify=tk.LEFT
-        )
-        inspector_content.pack(anchor=tk.W, pady=(0, 10))
+        if is_html_response:
+            # Generate HTML and display it
+            html_content = HTMLDisplay.generate_html_response(
+                inspector_notes, 
+                engine_details, 
+                fault_accident, 
+                has_engine_issue
+            )
+            html_display = HTMLDisplay(combined_frame, html_content, width=800)
+            html_display.pack(fill=tk.BOTH, expand=True)
+        else:
+            # Fall back to the original text-based display
+            # Inspector Notes section
+            inspector_label = ttk.Label(
+                combined_frame,
+                text="Inspector Notes:",
+                font=("Arial", 10, "bold"),
+                foreground=self.colors["primary"]
+            )
+            inspector_label.pack(anchor=tk.W)
+            inspector_content = ttk.Label(
+                combined_frame,
+                text=inspector_notes,
+                font=("Arial", 10),
+                wraplength=800,
+                justify=tk.LEFT
+            )
+            inspector_content.pack(anchor=tk.W, pady=(0, 10))
 
-        # Engine Details section
-        engine_label = ttk.Label(
-            combined_frame,
-            text="Engine Details:",
-            font=("Arial", 10, "bold"),
-            foreground=self.colors["primary"]
-        )
-        engine_label.pack(anchor=tk.W)
-        engine_content = ttk.Label(
-            combined_frame,
-            text=engine_details,
-            font=("Arial", 10),
-            wraplength=800,
-            justify=tk.LEFT,
-            foreground="red" if has_engine_issue else self.colors["text_dark"]
-        )
-        engine_content.pack(anchor=tk.W, pady=(0, 10))
+            # Engine Details section
+            engine_label = ttk.Label(
+                combined_frame,
+                text="Engine Details:",
+                font=("Arial", 10, "bold"),
+                foreground=self.colors["primary"]
+            )
+            engine_label.pack(anchor=tk.W)
+            engine_content = ttk.Label(
+                combined_frame,
+                text=engine_details,
+                font=("Arial", 10),
+                wraplength=800,
+                justify=tk.LEFT,
+                foreground="red" if has_engine_issue else self.colors["text_dark"]
+            )
+            engine_content.pack(anchor=tk.W, pady=(0, 10))
 
-        # Fault/Accident Details section
-        fault_label = ttk.Label(
-            combined_frame,
-            text="Fault/Accident Details:",
-            font=("Arial", 10, "bold"),
-            foreground=self.colors["primary"]
-        )
-        fault_label.pack(anchor=tk.W)
-        fault_content = ttk.Label(
-            combined_frame,
-            text=fault_accident,
-            font=("Arial", 10),
-            wraplength=800,
-            justify=tk.LEFT
-        )
-        fault_content.pack(anchor=tk.W)
+            # Fault/Accident Details section
+            fault_label = ttk.Label(
+                combined_frame,
+                text="Fault/Accident Details:",
+                font=("Arial", 10, "bold"),
+                foreground=self.colors["primary"]
+            )
+            fault_label.pack(anchor=tk.W)
+            fault_content = ttk.Label(
+                combined_frame,
+                text=fault_accident,
+                font=("Arial", 10),
+                wraplength=800,
+                justify=tk.LEFT
+            )
+            fault_content.pack(anchor=tk.W)
 
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
@@ -1038,8 +894,7 @@ class ScreenshotApp:
         open_button.pack(side=tk.RIGHT, padx=5)
         
         self.on_frame_configure(None)
-
-
+        
     def open_screenshot(self, path):
         try:
             if platform.system() == 'Windows':
@@ -1073,70 +928,98 @@ class ScreenshotApp:
     def on_close(self):
         self.root.destroy()
         
-    def make_api_call(self, payload):
-        self.show_loader()  # Show loader centered on the screen
-        try:
-            url = "http://localhost:8001/v1/chat"
-            headers = {
-                "Content-Type": "application/json",
-                'x-api-key': 'your-api-key-here'  # Replace with your actual API key
-            }
-
-            response = requests.post(url, json=payload, headers=headers)
-            print("Response:", response)  # Debugging line to check the response
-            print("Response:", response.status_code)  # Debugging line to check the response
-            if response.status_code == 201:
-                response.raise_for_status()
-
-                return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-
-        except requests.exceptions.RequestException as e:
-            print("The error is:", str(e))
-            return "Unauthorized User:its seems you don't have permission, contact your admin"
-
-        finally:
-            self.hide_loader()  # Hide loader when API call is complete
-
-
     # def make_api_call(self, payload):
     #     self.show_loader()  # Show loader centered on the screen
     #     try:
-    #         # Comment out the original API call
-    #         """
     #         url = "http://localhost:8001/v1/chat"
     #         headers = {
     #             "Content-Type": "application/json",
-    #             'x-api-key': 'your-api-key-here'  # Replace with your actual API key
+    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
     #         }
 
     #         response = requests.post(url, json=payload, headers=headers)
-            
-    #         response.raise_for_status()
+    #         print("Response:", response)  # Debugging line to check the response
+    #         print("Response:", response.status_code)  # Debugging line to check the response
+    #         if response.status_code == 201:
+    #             response.raise_for_status()
 
-    #         return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-    #         """
-            
-    #         # Instead, generate a mock response
-    #         # time.sleep(1)  # Simulate API latency
-    #         mock_response = {
-    #             "inspector_notes": "Vehicle inspection completed on April 8, 2025. The vehicle appears to be in generally good condition with some minor issues noted. Regular maintenance has been performed according to service records.",
-    #             "engine_details": "2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. Oil level is adequate but due for change within 500 miles. Some oil seepage noted around valve cover gasket.",
-    #             "fault_accident": "Minor scrape on rear bumper, likely from parking incident. Driver side mirror shows signs of previous repair. No major accident damage detected. Check engine light intermittently appears according to owner.",
-    #             "has_engine_issue": True if random.random() > 0.7 else False  # Randomly return True ~30% of the time
-    #         }
-    #         return mock_response
+    #             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
 
-    #     except Exception as e:
-    #         logging.error(f"Error in mock API call: {str(e)}")
-    #         return {
-    #             "inspector_notes": "Error retrieving inspector notes.",
-    #             "engine_details": "Error retrieving engine details.",
-    #             "fault_accident": "Error retrieving fault/accident information.",
-    #             "has_engine_issue": False
-    #         }
+    #     except requests.exceptions.RequestException as e:
+    #         print("The error is:", str(e))
+    #         return "Unauthorized User:its seems you don't have permission, contact your admin"
 
     #     finally:
     #         self.hide_loader()  # Hide loader when API call is complete
+
+    def make_api_call(self, payload):
+        self.show_loader()  # Show loader centered on the screen
+        try:
+            # Keep the commented out original API call
+            """
+            url = "http://localhost:8001/v1/chat"
+            headers = {
+                "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+            }
+
+            response = requests.post(url, json=payload, headers=headers)
+            
+            response.raise_for_status()
+
+            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+            """
+            
+            # Instead, generate a richer HTML mock response
+            has_engine_issue = True if random.random() > 0.7 else False
+            
+            # Base content - same as before but with some formatting
+            inspector_notes = """
+            Vehicle inspection completed on <b>April 8, 2025</b>. The vehicle appears to be in 
+            <span class="highlight">generally good condition</span> with some minor issues noted. 
+            Regular maintenance has been performed according to service records provided by owner.
+            """
+            
+            engine_details = """
+            2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. 
+            Oil level is adequate but <b>due for change within 500 miles</b>. 
+            Some oil seepage noted around valve cover gasket that should be monitored.
+            """
+            
+            if has_engine_issue:
+                engine_details += """ <b>WARNING:</b> Intermittent engine misfire detected 
+                during cold start. Recommend diagnostics for potential fuel injector issue."""
+            
+            fault_accident = """
+            Minor scrape on rear bumper, likely from parking incident. 
+            Driver side mirror shows signs of previous repair. 
+            No major accident damage detected. 
+            Check engine light intermittently appears according to owner, 
+            correlated with cold weather starts.
+            """
+            
+            # Return both the raw data and HTML version
+            mock_response = {
+                "inspector_notes": inspector_notes.strip(),
+                "engine_details": engine_details.strip(),
+                "fault_accident": fault_accident.strip(),
+                "has_engine_issue": has_engine_issue,
+                "html_response": True  # Flag to indicate this is an HTML response
+            }
+            return mock_response
+
+        except Exception as e:
+            logging.error(f"Error in mock API call: {str(e)}")
+            return {
+                "inspector_notes": "Error retrieving inspector notes.",
+                "engine_details": "Error retrieving engine details.",
+                "fault_accident": "Error retrieving fault/accident information.",
+                "has_engine_issue": False,
+                "html_response": False
+            }
+
+        finally:
+            self.hide_loader()  # Hide loader when API call is complete
 
             
 if __name__ == "__main__":
