@@ -850,8 +850,12 @@ class ScreenshotApp:
             
             # Comment out the API call and use mock response
             result = self.make_api_call(payload_json)
-            
-            self.save_payload_to_file(payload_json)
+            print(result)
+            if type(result) == str or result==None:
+                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                return
+            else:
+                 self.save_payload_to_file(payload_json)
             
             # Add to screenshots list (at the beginning)
             self.screenshots.insert(0, {
@@ -1075,18 +1079,20 @@ class ScreenshotApp:
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                'x-api-key': 'emomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
             response = requests.post(url, json=payload, headers=headers)
-            
-            response.raise_for_status()
+            print("Response:", response)  # Debugging line to check the response
+            print("Response:", response.status_code)  # Debugging line to check the response
+            if response.status_code == 201:
+                response.raise_for_status()
 
-            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+                return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
 
         except requests.exceptions.RequestException as e:
             print("The error is:", str(e))
-            return None
+            return "Unauthorized User:its seems you don't have permission, contact your admin"
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
