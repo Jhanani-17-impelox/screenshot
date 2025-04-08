@@ -279,7 +279,7 @@ class MarkdownText(tk.Text):
             if italic_match:
                 matches.append(('italic', italic_match.start(), italic_match.end(), italic_match.group(1)))
             if link_match:
-                matches.append(('link', link_match.start(), link_match.end(), link_match.group(1)))
+                matches.append(('link', link_match.start(), link_match.end(), bold_match.group(1)))
             
             # If no matches, insert remaining text and exit
             if not matches:
@@ -927,49 +927,74 @@ class ScreenshotApp:
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
         
-        # Check if API response exists
-        response_text = screenshot_data.get("api_response", "No API response available")
+        # Extract API response
+        api_response = screenshot_data.get("api_response", {})
+        inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
+        engine_details = api_response.get("engine_details", "No Engine Details available")
+        fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
+        has_engine_issue = api_response.get("has_engine_issue", False)
 
         frame = ttk.Frame(self.screenshots_container)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        # --- API Response Card ---
-        response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-        response_card.pack(fill=tk.X, padx=5, pady=5)
-
-        # --- Scrollable Text Container ---
-        text_frame = ttk.Frame(response_card)
-        text_frame.pack(fill=tk.BOTH, expand=True)
-
-        # --- Scrollbars ---
-        v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
-        
-        # --- Response Content with Markdown Formatting ---
-        response_content = MarkdownText(
-            text_frame,
-            wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
-            height=20,  # Default height
-            width=70,
-            font=("Segoe UI", 10),
-            bg="#DBEAF7",
-            relief=tk.FLAT,
-            padx=10,
-            pady=5,
-            yscrollcommand=v_scrollbar.set,
-          
+        # --- Inspector Notes ---
+        inspector_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+        inspector_frame.pack(fill=tk.X, padx=5, pady=5)
+        inspector_label = ttk.Label(
+            inspector_frame,
+            text="Inspector Notes:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
         )
-        
-        # Insert Markdown text
-        response_content.insert_markdown(response_text)
-        
-        response_content.config(state=tk.DISABLED)  # Make it read-only
+        inspector_label.pack(anchor=tk.W)
+        inspector_content = ttk.Label(
+            inspector_frame,
+            text=inspector_notes,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT
+        )
+        inspector_content.pack(anchor=tk.W)
 
-        # Pack elements
-        v_scrollbar.config(command=response_content.yview)
-      
-        response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-      
+        # --- Engine Details ---
+        engine_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+        engine_frame.pack(fill=tk.X, padx=5, pady=5)
+        engine_label = ttk.Label(
+            engine_frame,
+            text="Engine Details:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
+        )
+        engine_label.pack(anchor=tk.W)
+        engine_content = ttk.Label(
+            engine_frame,
+            text=engine_details,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT,
+            foreground="red" if has_engine_issue else self.colors["text_dark"]
+        )
+        engine_content.pack(anchor=tk.W)
+
+        # --- Fault/Accident Details ---
+        fault_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+        fault_frame.pack(fill=tk.X, padx=5, pady=5)
+        fault_label = ttk.Label(
+            fault_frame,
+            text="Fault/Accident Details:",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
+        )
+        fault_label.pack(anchor=tk.W)
+        fault_content = ttk.Label(
+            fault_frame,
+            text=fault_accident,
+            font=("Arial", 10),
+            wraplength=800,
+            justify=tk.LEFT
+        )
+        fault_content.pack(anchor=tk.W)
+
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
         if img:
@@ -988,7 +1013,7 @@ class ScreenshotApp:
             image_label = ttk.Label(image_frame, image=photo)
             image_label.image = photo
             image_label.pack()
-        
+
         # --- Header for Open Button ---
         title_frame = ttk.Frame(frame)
         title_frame.pack(fill=tk.X)
