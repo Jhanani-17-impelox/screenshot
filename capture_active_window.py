@@ -1011,6 +1011,7 @@ class ScreenshotApp:
             }
 
             response = requests.post(url, json=payload, headers=headers)
+            print(response,'============response============')
             response.raise_for_status()
 
             return response.json().get("assistant_message")
