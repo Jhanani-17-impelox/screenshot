@@ -1,7 +1,11 @@
-2025-04-08 11:07:50,580 - DEBUG - STREAM b'IHDR' 16 13
-2025-04-08 11:07:50,581 - DEBUG - STREAM b'IDAT' 41 8192
-2025-04-08 11:07:54,006 - INFO - Screenshot saved to C:\Users\jhana\AppData\Local\Temp\es_screenshots_20250408_110750\screenshot_110753_updated_code_with_markdown_and.png
-2025-04-08 11:07:54,121 - DEBUG - STREAM b'IHDR' 16 13
-2025-04-08 11:07:54,122 - DEBUG - STREAM b'IDAT' 41 65536
-2025-04-08 11:07:54,214 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
-2025-04-08 11:07:55,126 - INFO - Captured active window: updated_code_with_markdown_and_drag_feature.py - screenshots - Visual Studio Code
+2025-04-08 12:42:03,392 - INFO - Starting capture process.
+2025-04-08 12:42:03,428 - INFO - Capture already in progress.
+2025-04-08 12:42:03,428 - INFO - Loader shown for capture process.
+2025-04-08 12:42:03,472 - INFO - Windows hidden for capture.
+2025-04-08 12:42:03,980 - INFO - Captured window title: capture_active_window.py - screenshots - Visual Studio Code
+2025-04-08 12:42:03,980 - INFO - Window bounds: (-9, -9, 1938, 1038)
+2025-04-08 12:42:04,097 - INFO - Screenshot taken for active window.
+2025-04-08 12:42:04,473 - DEBUG - STREAM b'IHDR' 16 13
+2025-04-08 12:42:04,473 - DEBUG - STREAM b'IDAT' 41 65536
+2025-04-08 12:42:04,629 - INFO - Payload saved to C:\Users\jhana\OneDrive\Desktop\screenshots\payload.json
+2025-04-08 12:42:05,273 - INFO - Captured active window: capture_active_window.py - screenshots - Visual Studio Code
