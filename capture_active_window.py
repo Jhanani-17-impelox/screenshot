@@ -888,7 +888,7 @@ class ScreenshotApp:
             self.is_capturing = False
             self.hide_loader()  # Hide loader when capture is complete
     
-    def compress_image(self, image, quality=40, max_size=1024):
+    def compress_image(self, image, quality=60, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size
         
