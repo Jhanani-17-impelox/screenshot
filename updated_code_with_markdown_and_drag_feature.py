@@ -14,17 +14,13 @@ import json
 import uuid
 import requests
 import re
-
-import logging
+import logging  # Import logging module
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set to DEBUG for development, INFO for production
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("app.log"),  # Log to a file
-        logging.StreamHandler()  # Log to console
-    ]
+    filename='screenshot_app.log',  # Log file name
+    level=logging.DEBUG,  # Set the logging level
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Log message format
 )
 
 class MarkdownText(tk.Text):
@@ -383,11 +379,11 @@ class ScreenshotApp:
             with open(self.payload_file, 'w') as f:
                 json.dump(payload, f, indent=2)
             self.update_status(f"Payload saved to {self.payload_file}", "success")
-            logging.info(f"Payload saved to {self.payload_file}")
+            logging.info(f"Payload saved to {self.payload_file}")  # Log success
 
         except Exception as e:
             self.update_status(f"Error saving payload: {str(e)}", "error")
-            logging.error(f"Error saving payload: {str(e)}")
+            logging.error(f"Error saving payload: {str(e)}")  # Log error
 
     def setup_icon(self):
         try:
@@ -395,7 +391,7 @@ class ScreenshotApp:
             photo = ImageTk.PhotoImage(icon)
             self.root.iconphoto(False, photo)
         except Exception:
-            pass
+            logging.error(f"Error setting up icon: {str(e)}")  # Log error
     
     def create_main_layout(self):
         main_frame = ttk.Frame(self.root, padding=10)
@@ -510,6 +506,8 @@ class ScreenshotApp:
                     command=self.handle_capture
                 )
         except Exception as e:
+            logging.error(f"Error creating capture button: {str(e)}")  # Log error
+
             capture_button = tk.Button(
                 inner_frame,
                 text="📷",
@@ -613,6 +611,7 @@ class ScreenshotApp:
                 
                 return title, bounds
             except Exception as e:
+                logging.error(f"Error getting window info on Windows: {str(e)}")  # Log error
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Darwin':  # macOS
@@ -641,6 +640,7 @@ class ScreenshotApp:
                 bounds = [int(val) for val in result.split(',')]
                 return title, tuple(bounds)
             except Exception as e:
+                logging.error(f"Error getting window info on macOS: {str(e)}")  # Log error
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Linux':
@@ -668,8 +668,10 @@ class ScreenshotApp:
                 
                 return title, (x, y, width, height)
             except Exception as e:
+                logging.error(f"Error getting window info on Linux: {str(e)}")  # Log error
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
+        logging.warning("Unknown operating system, returning default window info.")    
         return f"Window_{datetime.now().strftime('%H%M%S')}", None
     
     def capture_active_window(self):
@@ -687,6 +689,7 @@ class ScreenshotApp:
                 self.root.deiconify()
                 self.button_window.deiconify()
                 self.update_status("No active window detected or captured our own app", "info")
+                logging.info("No active window detected or captured our own app")
                 self.is_capturing = False
                 return
             
@@ -698,6 +701,7 @@ class ScreenshotApp:
                     self.root.deiconify()
                     self.button_window.deiconify()
                     self.update_status("Invalid window dimensions detected", "error")
+                    logging.error("Invalid window dimensions detected")
                     self.is_capturing = False
                     return
                 
@@ -741,7 +745,8 @@ class ScreenshotApp:
                         win32gui.ReleaseDC(hwnd, hwndDC)
                         
                         capture_type = "active window"
-                    except Exception:
+                    except Exception as e:
+                        logging.error(f"Error capturing active window on Windows: {str(e)}")  # Log error
                         screenshot = pyautogui.screenshot()
                         capture_type = "full screen (fallback)"
                 else:
@@ -758,7 +763,7 @@ class ScreenshotApp:
             
             # Save original high-resolution image
             screenshot.save(file_path, quality=95)
-            logging.info(f"Screenshot saved to {file_path}")
+            logging.info(f"Screenshot saved to {file_path}")  # Log success
             
             # Compress image for base64 encoding
             compressed_img = self.compress_image(screenshot)
@@ -769,7 +774,7 @@ class ScreenshotApp:
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             
             # Add data URI prefix to base64 string
-            img_str = img_str_raw
+            img_str = f"data:image/png;base64,{img_str_raw}"
             
             # Create JSON payload with the base64 image
             session_id = str(uuid.uuid4())
@@ -808,19 +813,8 @@ This is an example of *formatted markdown* text that will be displayed properly 
 - Recently serviced
 - **No leaks detected**
 
-### Specifications
-| Parameter | Value | Status |
-|-----------|-------|--------|
-| Engine Type | V8 | Normal |
-| Displacement | 5.0L | Normal |
-| Oil Level | 95% | Good |
-| Coolant | 85% | Good |
-| Battery | 100% | Good |
-
-
-
+[More information](https://example.com)
 """
-          
             
             self.save_payload_to_file(payload_json)
             
@@ -832,7 +826,7 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 "path": file_path,
                 "base64": img_str,
                 "payload_json": payload_json,
-                "api_response": api_result
+                "api_response": mock_response
             })
             
             # Clear existing screenshots from UI
@@ -844,11 +838,12 @@ This is an example of *formatted markdown* text that will be displayed properly 
                 self.add_screenshot_to_ui(i)
             
             self.update_status(f"Captured {capture_type}: {window_title}", "success")
+            logging.info(f"Captured {capture_type}: {window_title}")  # Log success
         
         except Exception as e:
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
-            logging.error(f"Error capturing screenshot: {str(e)}")
-
+            logging.error(f"Error capturing screenshot: {str(e)}")  # Log error
+        
         finally:
             self.is_capturing = False
     
@@ -892,7 +887,6 @@ This is an example of *formatted markdown* text that will be displayed properly 
             background=bg_color,
             foreground=fg_color
         )
-        logging.info(f"Status updated: {message}")
     
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
@@ -1003,20 +997,16 @@ This is an example of *formatted markdown* text that will be displayed properly 
             else:  # Linux
                 import subprocess
                 subprocess.call(['xdg-open', self.temp_dir])
-            logging.info(f"Opened screenshots folder: {self.temp_dir}")
-
-
         except Exception as e:
             self.update_status(f"Error opening folder: {str(e)}", "error")
             logging.error(f"Error opening folder: {str(e)}")
-
+    
     def on_close(self):
         self.root.destroy()
-        logging.info("Application closed.")
         
     def make_api_call(self, payload):
         # This function is commented out - using mock response instead
-       
+        """
         try:
             url = "http://localhost:8001/v1/chat"
             headers = {
@@ -1031,8 +1021,9 @@ This is an example of *formatted markdown* text that will be displayed properly 
         except requests.exceptions.RequestException as e:
             print("The error is:", str(e))
             return None
-      
-        
+        """
+        mock_response = "This is a mock response since the API is non-functional."
+        return mock_response
 
 if __name__ == "__main__":
     root = tk.Tk()
