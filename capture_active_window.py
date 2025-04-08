@@ -941,205 +941,92 @@ This is an example of *formatted markdown* text that will be displayed properly 
             foreground=fg_color
         )
     
-
-
-    # def add_screenshot_to_ui(self, index):
-    #     screenshot_data = self.screenshots[index]
+    def add_screenshot_to_ui(self, index):
+        screenshot_data = self.screenshots[index]
         
-    #     # Check if API response exists
-    #     response_text = screenshot_data.get("api_response", "No API response available")
+        # Check if API response exists
+        response_text = screenshot_data.get("api_response", "No API response available")
 
-    #     frame = ttk.Frame(self.screenshots_container)
-    #     frame.pack(fill=tk.X, pady=(0, 15), padx=10)
+        frame = ttk.Frame(self.screenshots_container)
+        frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-    #     # --- API Response Card ---
-    #     response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-    #     response_card.pack(fill=tk.X, padx=5, pady=5)
+        # --- API Response Card ---
+        response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+        response_card.pack(fill=tk.X, padx=5, pady=5)
 
-    #     # --- Scrollable Text Container ---
-    #     text_frame = ttk.Frame(response_card)
-    #     text_frame.pack(fill=tk.BOTH, expand=True)
+        # --- Scrollable Text Container ---
+        text_frame = ttk.Frame(response_card)
+        text_frame.pack(fill=tk.BOTH, expand=True)
 
-    #     # --- Scrollbars ---
-    #     v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
+        # --- Scrollbars ---
+        v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
         
-    #     # --- Response Content with Markdown Formatting ---
-    #     response_content = MarkdownText(
-    #         text_frame,
-    #         wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
-    #         height=20,  # Default height
-    #         width=70,
-    #         font=("Segoe UI", 10),
-    #         bg="#DBEAF7",
-    #         relief=tk.FLAT,
-    #         padx=10,
-    #         pady=5,
-    #         yscrollcommand=v_scrollbar.set,
+        # --- Response Content with Markdown Formatting ---
+        response_content = MarkdownText(
+            text_frame,
+            wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
+            height=20,  # Default height
+            width=70,
+            font=("Segoe UI", 10),
+            bg="#DBEAF7",
+            relief=tk.FLAT,
+            padx=10,
+            pady=5,
+            yscrollcommand=v_scrollbar.set,
           
-    #     )
-        
-    #     # Insert Markdown text
-    #     response_content.insert_markdown(response_text)
-        
-    #     response_content.config(state=tk.DISABLED)  # Make it read-only
-
-    #     # Pack elements
-    #     v_scrollbar.config(command=response_content.yview)
-      
-    #     response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-    #     v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-      
-    #     # --- Screenshot Below ---
-    #     img = screenshot_data.get("image")
-    #     if img:
-    #         max_width = 600
-    #         width, height = img.size
-    #         ratio = min(max_width / width, 1.0)
-    #         new_width = int(width * ratio)
-    #         new_height = int(height * ratio)
-    #         thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-    #         photo = ImageTk.PhotoImage(thumbnail)
-    #         screenshot_data["photo"] = photo
-            
-    #         image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
-    #         image_frame.pack(pady=5)
-            
-    #         image_label = ttk.Label(image_frame, image=photo)
-    #         image_label.image = photo
-    #         image_label.pack()
-        
-    #     # --- Header for Open Button ---
-    #     title_frame = ttk.Frame(frame)
-    #     title_frame.pack(fill=tk.X)
-        
-    #     title_label = ttk.Label(
-    #         title_frame,
-    #         text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
-    #         font=("Arial", 10, "bold"),
-    #         foreground=self.colors["primary"]
-    #     )
-    #     title_label.pack(side=tk.LEFT, pady=5)
-        
-    #     open_button = ttk.Button(
-    #         title_frame,
-    #         text="Open Image",
-    #         command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-    #     )
-    #     open_button.pack(side=tk.RIGHT, padx=5)
-        
-    #     self.on_frame_configure(None)
-    
-
-def add_screenshot_to_ui(self, index):
-    screenshot_data = self.screenshots[index]
-    
-    # Get API response (could be dict or string)
-    api_response = screenshot_data.get("api_response", {})
-    
-    frame = ttk.Frame(self.screenshots_container)
-    frame.pack(fill=tk.X, pady=(0, 15), padx=10)
-
-    # --- API Response Card ---
-    response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-    response_card.pack(fill=tk.X, padx=5, pady=5)
-
-    # --- Check for engine issues ---
-    has_engine_issue = False
-    response_text = "No API response available"
-    
-    if isinstance(api_response, dict):
-        has_engine_issue = api_response.get("has_engine_issue", False)
-        # Get the actual text content for display
-        response_text = api_response.get("content", "No content in API response")
-    elif isinstance(api_response, str):
-        response_text = api_response
-    
-    # --- Add Engine Warning if needed ---
-    if has_engine_issue:
-        warning_frame = ttk.Frame(response_card)
-        warning_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        warning_label = ttk.Label(
-            warning_frame,
-            text="⚠️ ENGINE ISSUE DETECTED! Immediate attention required.",
-            font=("Arial", 12, "bold"),
-            foreground="#FF0000",  # Bright red color
-            background="#FFEEEE",  # Light red background
-            padding=10
         )
-        warning_label.pack(fill=tk.X)
-
-    # --- Scrollable Text Container ---
-    text_frame = ttk.Frame(response_card)
-    text_frame.pack(fill=tk.BOTH, expand=True)
-
-    # --- Scrollbars ---
-    v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
-    
-    # --- Response Content with Markdown Formatting ---
-    response_content = MarkdownText(
-        text_frame,
-        wrap=tk.WORD,
-        height=20,
-        width=70,
-        font=("Segoe UI", 10),
-        bg="#DBEAF7",
-        relief=tk.FLAT,
-        padx=10,
-        pady=5,
-        yscrollcommand=v_scrollbar.set,
-    )
-    
-    # Insert Markdown text
-    response_content.insert_markdown(response_text)
-    
-    response_content.config(state=tk.DISABLED)  # Make it read-only
-
-    # Pack elements
-    v_scrollbar.config(command=response_content.yview)
-    response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-    v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-  
-    # --- Screenshot Below ---
-    img = screenshot_data.get("image")
-    if img:
-        max_width = 600
-        width, height = img.size
-        ratio = min(max_width / width, 1.0)
-        new_width = int(width * ratio)
-        new_height = int(height * ratio)
-        thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-        photo = ImageTk.PhotoImage(thumbnail)
-        screenshot_data["photo"] = photo
         
-        image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
-        image_frame.pack(pady=5)
+        # Insert Markdown text
+        response_content.insert_markdown(response_text)
         
-        image_label = ttk.Label(image_frame, image=photo)
-        image_label.image = photo
-        image_label.pack()
-    
-    # --- Header for Open Button ---
-    title_frame = ttk.Frame(frame)
-    title_frame.pack(fill=tk.X)
-    
-    title_label = ttk.Label(
-        title_frame,
-        text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
-        font=("Arial", 10, "bold"),
-        foreground=self.colors["primary"]
-    )
-    title_label.pack(side=tk.LEFT, pady=5)
-    
-    open_button = ttk.Button(
-        title_frame,
-        text="Open Image",
-        command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-    )
-    open_button.pack(side=tk.RIGHT, padx=5)
-    
-    self.on_frame_configure(None)
+        response_content.config(state=tk.DISABLED)  # Make it read-only
+
+        # Pack elements
+        v_scrollbar.config(command=response_content.yview)
+      
+        response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+      
+        # --- Screenshot Below ---
+        img = screenshot_data.get("image")
+        if img:
+            max_width = 600
+            width, height = img.size
+            ratio = min(max_width / width, 1.0)
+            new_width = int(width * ratio)
+            new_height = int(height * ratio)
+            thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(thumbnail)
+            screenshot_data["photo"] = photo
+            
+            image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
+            image_frame.pack(pady=5)
+            
+            image_label = ttk.Label(image_frame, image=photo)
+            image_label.image = photo
+            image_label.pack()
         
+        # --- Header for Open Button ---
+        title_frame = ttk.Frame(frame)
+        title_frame.pack(fill=tk.X)
+        
+        title_label = ttk.Label(
+            title_frame,
+            text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
+            font=("Arial", 10, "bold"),
+            foreground=self.colors["primary"]
+        )
+        title_label.pack(side=tk.LEFT, pady=5)
+        
+        open_button = ttk.Button(
+            title_frame,
+            text="Open Image",
+            command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
+        )
+        open_button.pack(side=tk.RIGHT, padx=5)
+        
+        self.on_frame_configure(None)
+    
     def open_screenshot(self, path):
         try:
             if platform.system() == 'Windows':
@@ -1172,7 +1059,7 @@ def add_screenshot_to_ui(self, index):
     
     def on_close(self):
         self.root.destroy()
-    # my code:
+        
     # def make_api_call(self, payload):
     #     self.show_loader()  # Show loader centered on the screen
     #     mock_response = "This is a mock response since the API is non-functional."
@@ -1180,28 +1067,6 @@ def add_screenshot_to_ui(self, index):
     #     self.hide_loader()  # Hide loader when API call is complete
     #     logger.info("Mock API response returned.")
     #     return mock_response
-
-
-# sharmila akka:
-    # def make_api_call(self, payload):
-    #     self.show_loader()  # Show loader centered on the screen
-    #     try:
-    #         url = "http://localhost:8001/v1/chat"
-    #         headers = {
-    #             "Content-Type": "application/json",
-    #         }
-
-    #         response = requests.post(url, json=payload, headers=headers)
-    #         response.raise_for_status()
-
-    #         return response.json().get("assistant_message")
-
-    #     except requests.exceptions.RequestException as e:
-    #         print("The error is:", str(e))
-    #         return None
-
-    #     finally:
-    #         self.hide_loader()  # Hide loader when API call is complete
 
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
@@ -1214,18 +1079,15 @@ def add_screenshot_to_ui(self, index):
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
 
-            # Parse the full response
-            response_data = response.json()
-            assistant_message = response_data.get("assistant_message", {})
-            
-            return assistant_message
+            return response.json().get("assistant_message")
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"API error: {str(e)}")
-            return {"error": str(e)}
+            print("The error is:", str(e))
+            return None
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
+
 
     
 
