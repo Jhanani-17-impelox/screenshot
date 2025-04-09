@@ -89,35 +89,38 @@ class HTMLDisplay:
         html = f"""
 <html>
 <head>
-<style>
+ <style>
     body {{
-        font-family: 'Segoe UI', Arial, sans-serif;
-        color: #333333;
         margin: 0;
         padding: 0;
+        font-size: 10px;
+        font-family: Arial, sans-serif;
+        line-height: 1.0;
     }}
-    .section {{
-        margin-bottom: 15px;
-        padding: 0;
+    table {{
+        border-collapse: collapse;
+        width: 100%;
+        border: 1px solid #4a6baf;
+    }}
+    th, td {{
+        border: 1px solid #4a6baf;
+        padding: 2px 4px;
+        text-align: left;
+        line-height: 1.0;
     }}
     h3 {{
         color: #4a6baf;
-        margin: 10px 0 5px 0;
-        padding: 0;
-        font-size: 14px;
+        font-size: 12px;
+        margin: 2px 0 2px 0;
         border-bottom: 1px solid #e1e5eb;
     }}
     p {{
-        margin: 1px 0px;
-        line-height: 0.5;
-        text-align: justify;
+        margin: 2px 0;
+        font-size: 10px;
+        line-height: 1.1;
     }}
     .issue {{
-        color: {engine_color};
-    }}
-    .highlight {{
-        background-color: #fff3cd;
-        padding: 2px;
+        color: #d9534f;
     }}
 </style>
 </head>
@@ -132,7 +135,7 @@ class HTMLDisplay:
             print(engine_details,"---------engine details")
             html += f"""
             <h3>Engine Details</h3>
-            <p class="issue">{engine_details}</p>
+             <p class="{ 'issue' if has_engine_issue else '' }">{engine_details}</p>
             """
 
         html += f"""
@@ -793,38 +796,46 @@ class ScreenshotApp:
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
         # --- Combined Box for All Information ---
-        combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-        combined_frame.pack(fill=tk.X, padx=5, pady=5)
+        combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=2)
+        combined_frame.pack(fill=tk.X, padx=1, pady=1)
 
         # Build combined HTML content
         combined_html = f"""
             <style>
-            table {{
-            border-collapse: collapse;
-            width: 100%;
-            border: 1px solid #4a6baf;
-        }}
-        th, td {{
-            border: 1px solid #4a6baf;
-            padding: 4px 8px;
-            text-align: left;
-        }}
-                h3 {{
-                    color: #4a6baf;
-                    font-size: 14px;
-                    margin: 10px 0 5px 0;
-                    border-bottom: 1px solid #e1e5eb;
-                }}
-                p {{
-                    margin: 2px 0 8px 0;
-                    text-align: justify;
-                    font-size: 13px;
-                }}
-                .issue {{
-                    color: #d9534f;
-                }}
+    body {{
+        margin: 0;
+        padding: 0;
+        font-size: 10px;
+        font-family: Arial, sans-serif;
+        line-height: 1.0;
+    }}
+    table {{
+        border-collapse: collapse;
+        width: 100%;
+        border: 1px solid #4a6baf;
+    }}
+    th, td {{
+        border: 1px solid #4a6baf;
+        padding: 2px 4px;
+        text-align: left;
+        line-height: 1.0;
+    }}
+    h3 {{
+        color: #4a6baf;
+        font-size: 12px;
+        margin: 2px 0 2px 0;
+        border-bottom: 1px solid #e1e5eb;
+    }}
+    p {{
+        margin: 2px 0;
+        font-size: 10px;
+        line-height: 0.1;
+    }}
+    .issue {{
+        color: #d9534f;
+    }}
+</style>
 
-            </style>
 
             <h3>Inspector Notes</h3>
             {inspector_notes}
