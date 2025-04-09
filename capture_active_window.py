@@ -842,10 +842,10 @@ class ScreenshotApp:
     def create_tables_from_html(self, parent_frame, html_content):
         """Parse HTML tables and create Tkinter tables"""
         import re
-        
+
         # Find all table sections in the HTML
         table_sections = re.findall(r'<h3>(.*?)</h3>.*?<table>(.*?)</table>', html_content, re.DOTALL)
-        
+
         for section_title, table_html in table_sections:
             # Create a section header
             section_label = ttk.Label(
@@ -855,23 +855,23 @@ class ScreenshotApp:
                 foreground=self.colors["primary"]
             )
             section_label.pack(anchor=tk.W, pady=(10, 5))
-            
+
             # Create a frame for the table
             table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
             table_frame.pack(fill=tk.X, pady=(0, 10))
-            
+
             # Parse table headers
             headers = re.findall(r'<th>(.*?)</th>', table_html)
-            
+
             # Parse table rows
             rows = []
-            row_matches = re.findall(r'<tr>(.*?)</tr>', table_html)
+            row_matches = re.findall(r'<tr>(.*?)</tr>', table_html, re.DOTALL)
             for row_html in row_matches:
                 if '<th>' in row_html:  # Skip header row
                     continue
-                cells = re.findall(r'<td>(.*?)</td>', row_html)
+                cells = re.findall(r'<td>(.*?)</td>', row_html, re.DOTALL)
                 rows.append(cells)
-            
+
             # Create the table headers
             for i, header in enumerate(headers):
                 header_label = ttk.Label(
@@ -887,14 +887,14 @@ class ScreenshotApp:
                 )
                 header_label.grid(row=0, column=i, sticky="nsew")
                 table_frame.columnconfigure(i, weight=1)
-            
+
             # Create the table rows
             for i, row in enumerate(rows):
                 for j, cell in enumerate(row):
                     # Handle line breaks in cells
                     cell_text = cell.replace('<br>', '\n')
                     cell_text = self.strip_html_tags(cell_text)
-                    
+
                     cell_label = ttk.Label(
                         table_frame,
                         text=cell_text,
@@ -904,7 +904,7 @@ class ScreenshotApp:
                         background="white",
                         anchor="w"
                     )
-                    cell_label.grid(row=i+1, column=j, sticky="nsew")
+                    cell_label.grid(row=i + 1, column=j, sticky="nsew")
 
     def open_screenshot(self, path):
         try:
@@ -1008,23 +1008,26 @@ class ScreenshotApp:
             </style>
             <h3>Inspector Notes</h3>
             <table>
-            <thead>
+            <th>
                 <tr>
                 <th>Japanese Text</th>
                 <th>Spanish Translation</th>
+               
                 </tr>
-            </thead>
-            <tbody>
+            </th>
+            <tb>
                 <tr>
                 <td>オートマミッション水<br>下仁术<br>Hライトメッキ・桜水<br>Fホースメントイメ</td>
                 <td>Agua de la transmisión automática<br>Debajo del personal<br>Luz alta cromada, agua de cerezo<br>Imagen del puntal F</td>
                 </tr>
-            </tbody>
+            </tb>
             </table>
             <h3>Fault/Accident Details</h3>
             <table>
             <thead>
                 <tr>
+                <th>Japanese Text</th>
+                <th>Spanish Translation</th>
                 <th>Japanese Text</th>
                 <th>Spanish Translation</th>
                 </tr>
@@ -1033,6 +1036,8 @@ class ScreenshotApp:
                 <tr>
                 <td>チャコウス A</td>
                 <td>Chaqueta A</td>
+                <th>Japanese Text</th>
+                <th>Spanish Translation</th>
                 </tr>
             </tbody>
             </table>
