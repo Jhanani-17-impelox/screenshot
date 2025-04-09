@@ -737,7 +737,7 @@ class ScreenshotApp:
             self.is_capturing = False
             self.hide_loader()  # Hide loader when capture is complete
     
-    def compress_image(self, image, quality=60, max_size=1024):
+    def compress_image(self, image, quality=70, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size
         
@@ -781,11 +781,11 @@ class ScreenshotApp:
         
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
-        
+
         # Extract API response
         api_response = screenshot_data.get("api_response", {})
         inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
-        engine_details = api_response.get("engine_details", "No Engine Details available")
+        engine_details = api_response.get("engine_details", "")
         fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
         has_engine_issue = api_response.get("has_engine_issue", False)
 
@@ -796,36 +796,43 @@ class ScreenshotApp:
         combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
         combined_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Render Inspector Notes
-        inspector_html = f"""
-       
+        # Build combined HTML content
+        combined_html = f"""
+            <style>
+                h3 {{
+                    color: #4a6baf;
+                    font-size: 14px;
+                    margin: 10px 0 5px 0;
+                    border-bottom: 1px solid #e1e5eb;
+                }}
+                p {{
+                    margin: 2px 0 8px 0;
+                    text-align: justify;
+                    font-size: 13px;
+                }}
+                .issue {{
+                    color: #d9534f;
+                }}
+            </style>
+
             <h3>Inspector Notes</h3>
-            {inspector_notes}
-        
+            <p>{inspector_notes}</p>
         """
-        inspector_display = HTMLDisplay(combined_frame, inspector_html, width=800)
-        inspector_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
 
-        # Render Engine Details
-        if engine_details!="null":
-            engine_html = f"""
-           
+        if engine_details and engine_details != "null":
+            combined_html += f"""
                 <h3>Engine Details</h3>
-                <p class="{'issue' if has_engine_issue else ''}">{engine_details}</p>
-           
+                <p class="{ 'issue' if has_engine_issue else '' }">{engine_details}</p>
             """
-            engine_display = HTMLDisplay(combined_frame, engine_html, width=800)
-            engine_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
 
-        # Render Fault/Accident Details
-        fault_html = f"""
-        
+        combined_html += f"""
             <h3>Fault/Accident Details</h3>
-            {fault_accident}
-        
+            <p>{fault_accident}</p>
         """
-        fault_display = HTMLDisplay(combined_frame, fault_html, width=800)
-        fault_display.pack(fill=tk.BOTH, expand=True)
+
+        # Render all sections in a single HTML display
+        info_display = HTMLDisplay(combined_frame, combined_html, width=800)
+        info_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
 
         # --- Screenshot Below ---
         img = screenshot_data.get("image")
