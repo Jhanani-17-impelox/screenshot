@@ -933,8 +933,17 @@ class ScreenshotApp:
 
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
-
-            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
+            if response.status_code != 201 and response.status_code == 401:
+                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                return None
+            elif response.status_code == 500:
+                self.update_status("Server Error: Please try again later", "error")
+                return None
+            elif response.status_code == 201:
+                return json.loads(response.json().get("assistant_message"))
+            else:
+                self.update_status("Unexpected Error: Please try again", "error")
+                return None
           
 
             # # Mock response
