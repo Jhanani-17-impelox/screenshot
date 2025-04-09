@@ -748,7 +748,6 @@ class ScreenshotApp:
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        # Create sections for text content
         # Inspector Notes Section
         notes_label = ttk.Label(
             frame,
@@ -757,12 +756,9 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         notes_label.pack(anchor=tk.W, pady=(5, 0))
-        
-        notes_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
-        notes_text.insert(tk.END, self.strip_html_tags(inspector_notes))
-        notes_text.config(state=tk.DISABLED)
-        notes_text.pack(fill=tk.X, pady=(0, 10))
-        
+
+        self.create_tables_from_html(frame, inspector_notes)
+
         # Engine Details Section
         engine_label = ttk.Label(
             frame,
@@ -771,14 +767,14 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         engine_label.pack(anchor=tk.W, pady=(5, 0))
-        
+
         engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
         engine_text.insert(tk.END, self.strip_html_tags(engine_details))
         engine_text.config(state=tk.DISABLED)
         if has_engine_issue:
             engine_text.config(foreground="red")
         engine_text.pack(fill=tk.X, pady=(0, 10))
-        
+
         # Fault/Accident Details Section
         fault_label = ttk.Label(
             frame,
@@ -787,17 +783,9 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         fault_label.pack(anchor=tk.W, pady=(5, 0))
-        
-        fault_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
-        fault_text.insert(tk.END, self.strip_html_tags(fault_accident))
-        fault_text.config(state=tk.DISABLED)
-        fault_text.pack(fill=tk.X, pady=(0, 10))
-        
-        # Check for and create tables from additional_html
-        additional_html = api_response.get("additional_html", "")
-        if additional_html and "<table>" in additional_html:
-            self.create_tables_from_html(frame, additional_html)
-        
+
+        self.create_tables_from_html(frame, fault_accident)
+
         # Render the screenshot below the information
         img = screenshot_data.get("image")
         if img:
@@ -844,21 +832,12 @@ class ScreenshotApp:
         import re
 
         # Find all table sections in the HTML
-        table_sections = re.findall(r'<h3>(.*?)</h3>.*?<table>(.*?)</table>', html_content, re.DOTALL)
+        table_sections = re.findall(r'<table>(.*?)</table>', html_content, re.DOTALL)
 
-        for section_title, table_html in table_sections:
-            # Create a section header
-            section_label = ttk.Label(
-                parent_frame,
-                text=section_title,
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            section_label.pack(anchor=tk.W, pady=(10, 5))
-
+        for table_html in table_sections:
             # Create a frame for the table
             table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
-            table_frame.pack(fill=tk.X, pady=(0, 10))
+            table_frame.pack(fill=tk.X, pady=(10, 10))
 
             # Parse table headers
             headers = re.findall(r'<th>(.*?)</th>', table_html)
@@ -939,8 +918,6 @@ class ScreenshotApp:
     def on_close(self):
         self.root.destroy()
         
-
-
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
@@ -949,7 +926,7 @@ class ScreenshotApp:
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                'x-api-key': 'your-api-key'
             }
 
             response = requests.post(url, json=payload, headers=headers)
@@ -959,98 +936,45 @@ class ScreenshotApp:
             """
 
             # Mock response
-            has_engine_issue = True if random.random() > 0.7 else False
-
-            inspector_notes = """
-            Vehicle inspection completed on <b>April 8, 2025</b>. The vehicle appears to be in 
-            <span class="highlight">generally good condition</span> with some minor issues noted. 
-            Regular maintenance has been performed according to service records provided by owner.
-            """
-
-            engine_details = """
-            2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. 
-            Oil level is adequate but <b>due for change within 500 miles</b>. 
-            Some oil seepage noted around valve cover gasket that should be monitored.
-            """
-
-            if has_engine_issue:
-                engine_details += """ <b>WARNING:</b> Intermittent engine misfire detected 
-                during cold start. Recommend diagnostics for potential fuel injector issue."""
-
-            fault_accident = """
-            Minor scrape on rear bumper, likely from parking incident. 
-            Driver side mirror shows signs of previous repair. 
-            No major accident damage detected. 
-            Check engine light intermittently appears according to owner, 
-            correlated with cold weather starts.
-            """
-
-            # Additional HTML content
-            additional_html = """
-            <style>
-            table { border-collapse: collapse; border: 1px solid #E1E5EB; width: 100%; }
-            th, td { border: 1px solid #E1E5EB; padding: 8px; text-align: left; }
-            th { background-color: #F2F2F2; }
-            h3 {
-                color: #4A6BAF;
-                font-size: 14px;
-                margin: 10px 0 5px 0;
-                border-bottom: 1px solid #E1E5EB;
-            }
-            p {
-                margin: 2px 0 8px 0;
-                text-align: justify;
-                font-size: 13px;
-            }
-            .issue {
-                color: #D9534F;
-            }
-            </style>
-            <h3>Inspector Notes</h3>
-            <table>
-            <th>
-                <tr>
-                <th>Japanese Text</th>
-                <th>Spanish Translation</th>
-               
-                </tr>
-            </th>
-            <tb>
-                <tr>
-                <td>オートマミッション水<br>下仁术<br>Hライトメッキ・桜水<br>Fホースメントイメ</td>
-                <td>Agua de la transmisión automática<br>Debajo del personal<br>Luz alta cromada, agua de cerezo<br>Imagen del puntal F</td>
-                </tr>
-            </tb>
-            </table>
-            <h3>Fault/Accident Details</h3>
-            <table>
-            <thead>
-                <tr>
-                <th>Japanese Text</th>
-                <th>Spanish Translation</th>
-                <th>Japanese Text</th>
-                <th>Spanish Translation</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                <td>チャコウス A</td>
-                <td>Chaqueta A</td>
-                <th>Japanese Text</th>
-                <th>Spanish Translation</th>
-                </tr>
-            </tbody>
-            </table>
-            """
-
-            # Return both the raw data and HTML version
             mock_response = {
-                "inspector_notes": inspector_notes.strip(),
-                "engine_details": engine_details.strip(),
-                "fault_accident": fault_accident.strip(),
-                "has_engine_issue": has_engine_issue,
-                "html_response": True,  # Flag to indicate this is an HTML response
-                "additional_html": additional_html.strip()
+                "engine_details": "null",
+                "fault_accident": """
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Japanese Text</th>
+                            <th>Spanish Translation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Fホースメン トイメ</td>
+                            <td>Imagen del refuerzo delantero.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """,
+                "has_engine_issue": False,
+                "inspector_notes": """
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Japanese Text</th>
+                            <th>Spanish Translation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>オートマ</td>
+                            <td>Automático</td>
+                        </tr>
+                        <tr>
+                            <td>下にハネ</td>
+                            <td>Salpicadura abajo</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """
             }
             return mock_response
 
@@ -1066,7 +990,8 @@ class ScreenshotApp:
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
-            
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = ScreenshotApp(root)
