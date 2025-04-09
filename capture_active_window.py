@@ -799,6 +799,16 @@ class ScreenshotApp:
         # Build combined HTML content
         combined_html = f"""
             <style>
+            table {{
+            border-collapse: collapse;
+            width: 100%;
+            border: 1px solid #4a6baf;
+        }}
+        th, td {{
+            border: 1px solid #4a6baf;
+            padding: 4px 8px;
+            text-align: left;
+        }}
                 h3 {{
                     color: #4a6baf;
                     font-size: 14px;
@@ -813,10 +823,11 @@ class ScreenshotApp:
                 .issue {{
                     color: #d9534f;
                 }}
+
             </style>
 
             <h3>Inspector Notes</h3>
-            <p>{inspector_notes}</p>
+            {inspector_notes}
         """
 
         if engine_details and engine_details != "null":
@@ -827,9 +838,9 @@ class ScreenshotApp:
 
         combined_html += f"""
             <h3>Fault/Accident Details</h3>
-            <p>{fault_accident}</p>
+           {fault_accident}
         """
-
+        print(combined_html,"-----------------combined html")
         # Render all sections in a single HTML display
         info_display = HTMLDisplay(combined_frame, combined_html, width=800)
         info_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
