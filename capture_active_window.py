@@ -692,7 +692,7 @@ class ScreenshotApp:
             self.is_capturing = False
             self.hide_loader()  # Hide loader when capture is complete
     
-    def compress_image(self, image, quality=60, max_size=1024):
+    def compress_image(self, image, quality=70, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size
         
@@ -737,10 +737,11 @@ class ScreenshotApp:
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
 
+
         # Extract API response
         api_response = screenshot_data.get("api_response", {})
         inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
-        engine_details = api_response.get("engine_details", "No Engine Details available")
+        engine_details = api_response.get("engine_details", "")
         fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
         has_engine_issue = api_response.get("has_engine_issue", False)
 
