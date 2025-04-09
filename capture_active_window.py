@@ -80,65 +80,71 @@ class HTMLDisplay:
 
     @staticmethod
     def generate_html_response(inspector_notes, engine_details, fault_accident, has_engine_issue=False):
+        print("1111111111111111111111111111111")
         """Generate formatted HTML for the response"""
         
         # Define styles for the HTML content
         engine_color = "#cc0000" if has_engine_issue else "#333333"
         
         html = f"""
-        <html>
-        <head>
-        <style>
-            body {{
-                font-family: 'Segoe UI', Arial, sans-serif;
-                color: #333333;
-                margin: 0;
-                padding: 0;
-            }}
-            .section {{
-                margin-bottom: 15px;
-                padding: 0;
-            }}
-            h3 {{
-                color: #4a6baf;
-                margin: 10px 0 5px 0;
-                padding: 0;
-                font-size: 14px;
-                border-bottom: 1px solid #e1e5eb;
-            }}
-            p {{
-                margin: 5px 0;
-                line-height: 1.4;
-                text-align: justify;
-            }}
-            .issue {{
-                color: {engine_color};
-            }}
-            .highlight {{
-                background-color: #fff3cd;
-                padding: 2px;
-            }}
-        </style>
-        </head>
-        <body>
-            <div class="section">
-                <h3>Inspector Notes</h3>
-                <p>{inspector_notes}</p>
-            </div>
-            
-            <div class="section">
-                <h3>Engine Details</h3>
-                <p class="issue">{engine_details}</p>
-            </div>
-            
-            <div class="section">
-                <h3>Fault/Accident Details</h3>
-                <p>{fault_accident}</p>
-            </div>
+<html>
+<head>
+<style>
+    body {{
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #333333;
+        margin: 0;
+        padding: 0;
+    }}
+    .section {{
+        margin-bottom: 15px;
+        padding: 0;
+    }}
+    h3 {{
+        color: #4a6baf;
+        margin: 10px 0 5px 0;
+        padding: 0;
+        font-size: 14px;
+        border-bottom: 1px solid #e1e5eb;
+    }}
+    p {{
+        margin: 1px 0px;
+        line-height: 0.5;
+        text-align: justify;
+    }}
+    .issue {{
+        color: {engine_color};
+    }}
+    .highlight {{
+        background-color: #fff3cd;
+        padding: 2px;
+    }}
+</style>
+</head>
+<body>
+
+    <h3>Inspector Notes</h3>
+    <p>{inspector_notes}</p>
+"""
+
+        # Conditionally add engine details section
+        if engine_details!="null":
+            print(engine_details,"---------engine details")
+            html += f"""
+            <h3>Engine Details</h3>
+            <p class="issue">{engine_details}</p>
+            """
+
+        html += f"""
+            <h3>Fault/Accident Details</h3>
+            <p>{fault_accident}</p>
+
         </body>
         </html>
         """
+        print(html,"--------html")
         return html
+
 
 class ScreenshotApp:
     def __init__(self, root):
@@ -792,30 +798,31 @@ class ScreenshotApp:
 
         # Render Inspector Notes
         inspector_html = f"""
-        <div class="section">
+       
             <h3>Inspector Notes</h3>
             {inspector_notes}
-        </div>
+        
         """
         inspector_display = HTMLDisplay(combined_frame, inspector_html, width=800)
-        inspector_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        inspector_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
 
         # Render Engine Details
-        engine_html = f"""
-        <div class="section">
-            <h3>Engine Details</h3>
-            <p class="{'issue' if has_engine_issue else ''}">{engine_details}</p>
-        </div>
-        """
-        engine_display = HTMLDisplay(combined_frame, engine_html, width=800)
-        engine_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        if engine_details!="null":
+            engine_html = f"""
+           
+                <h3>Engine Details</h3>
+                <p class="{'issue' if has_engine_issue else ''}">{engine_details}</p>
+           
+            """
+            engine_display = HTMLDisplay(combined_frame, engine_html, width=800)
+            engine_display.pack(fill=tk.BOTH, expand=True, pady=(0, 1))
 
         # Render Fault/Accident Details
         fault_html = f"""
-        <div class="section">
+        
             <h3>Fault/Accident Details</h3>
             {fault_accident}
-        </div>
+        
         """
         fault_display = HTMLDisplay(combined_frame, fault_html, width=800)
         fault_display.pack(fill=tk.BOTH, expand=True)
@@ -921,7 +928,7 @@ class ScreenshotApp:
         self.show_loader()  # Show loader centered on the screen
         try:
             # Keep the commented out original API call
-            """
+            
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
@@ -932,46 +939,46 @@ class ScreenshotApp:
             
             response.raise_for_status()
 
-            return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-            """
+            return json.loads(response.json().get("assistant_message"))
             
-            # Instead, generate a richer HTML mock response
-            has_engine_issue = True if random.random() > 0.7 else False
             
-            # Base content - same as before but with some formatting
-            inspector_notes = """
-            Vehicle inspection completed on <b>April 8, 2025</b>. The vehicle appears to be in 
-            <span class="highlight">generally good condition</span> with some minor issues noted. 
-            Regular maintenance has been performed according to service records provided by owner.
-            """
+            # # Instead, generate a richer HTML mock response
+            # has_engine_issue = True if random.random() > 0.7 else False
             
-            engine_details = """
-            2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. 
-            Oil level is adequate but <b>due for change within 500 miles</b>. 
-            Some oil seepage noted around valve cover gasket that should be monitored.
-            """
+            # # Base content - same as before but with some formatting
+            # inspector_notes = """
+            # Vehicle inspection completed on <b>April 8, 2025</b>. The vehicle appears to be in 
+            # <span class="highlight">generally good condition</span> with some minor issues noted. 
+            # Regular maintenance has been performed according to service records provided by owner.
+            # """
             
-            if has_engine_issue:
-                engine_details += """ <b>WARNING:</b> Intermittent engine misfire detected 
-                during cold start. Recommend diagnostics for potential fuel injector issue."""
+            # engine_details = """
+            # 2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. 
+            # Oil level is adequate but <b>due for change within 500 miles</b>. 
+            # Some oil seepage noted around valve cover gasket that should be monitored.
+            # """
             
-            fault_accident = """
-            Minor scrape on rear bumper, likely from parking incident. 
-            Driver side mirror shows signs of previous repair. 
-            No major accident damage detected. 
-            Check engine light intermittently appears according to owner, 
-            correlated with cold weather starts.
-            """
+            # if has_engine_issue:
+            #     engine_details += """ <b>WARNING:</b> Intermittent engine misfire detected 
+            #     during cold start. Recommend diagnostics for potential fuel injector issue."""
             
-            # Return both the raw data and HTML version
-            mock_response = {
-                "inspector_notes": inspector_notes.strip(),
-                "engine_details": engine_details.strip(),
-                "fault_accident": fault_accident.strip(),
-                "has_engine_issue": has_engine_issue,
-                "html_response": True  # Flag to indicate this is an HTML response
-            }
-            return mock_response
+            # fault_accident = """
+            # Minor scrape on rear bumper, likely from parking incident. 
+            # Driver side mirror shows signs of previous repair. 
+            # No major accident damage detected. 
+            # Check engine light intermittently appears according to owner, 
+            # correlated with cold weather starts.
+            # """
+            
+            # # Return both the raw data and HTML version
+            # mock_response = {
+            #     "inspector_notes": inspector_notes.strip(),
+            #     "engine_details": engine_details.strip(),
+            #     "fault_accident": fault_accident.strip(),
+            #     "has_engine_issue": has_engine_issue,
+            #     "html_response": True  # Flag to indicate this is an HTML response
+            # }
+            # return mock_response
 
         except Exception as e:
             logging.error(f"Error in mock API call: {str(e)}")
