@@ -517,7 +517,7 @@ class ScreenshotApp:
     
     def capture_active_window(self):
         self.is_capturing = True
-        self.show_loader()  # Show loader centered on the screen
+        # self.show_loader()  # Show loader centered on the screen
         logger.info("Loader shown for capture process.")
 
         try:
@@ -955,7 +955,8 @@ class ScreenshotApp:
                     borderwidth=1,
                     relief="solid",
                     padding=8,
-                    anchor="w"
+                    anchor="w",
+                    wraplength=300,  
                 )
                 header_label.grid(row=0, column=i, sticky="nsew")
                 table_frame.columnconfigure(i, weight=1)
@@ -1011,7 +1012,7 @@ class ScreenshotApp:
         self.root.destroy()
         
     def make_api_call(self, payload):
-        self.show_loader()  # Show loader centered on the screen
+        # self.show_loader()  # Show loader centered on the screen
         try:
           
             url = "http://localhost:8001/v1/chat"
@@ -1021,6 +1022,7 @@ class ScreenshotApp:
             }
 
             response = requests.post(url, json=payload, headers=headers)
+            print(response)
             response.raise_for_status()
             if response.status_code != 201 and response.status_code == 401:
                 self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
@@ -1037,16 +1039,11 @@ class ScreenshotApp:
 
         except Exception as e:
             logging.error(f"Error in mock API call: {str(e)}")
-            return {
-                "inspector_notes": "Error retrieving inspector notes.",
-                "engine_details": "Error retrieving engine details.",
-                "fault_accident": "Error retrieving fault/accident information.",
-                "has_engine_issue": False,
-                "html_response": False
-            }
+            self.update_status("Unexpected Error: Please try again", "error")
+            return None
 
-        finally:
-            self.hide_loader()  # Hide loader when API call is complete
+        # finally:
+            # self.hide_loader()  # Hide loader when API call is complete
 
 
 if __name__ == "__main__":
