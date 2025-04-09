@@ -739,9 +739,9 @@ class ScreenshotApp:
 
         # Extract API response
         api_response = screenshot_data.get("api_response", {})
-        inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
-        engine_details = api_response.get("engine_details", "No Engine Details available")
-        fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
+        inspector_notes = api_response.get("inspector_notes", None)
+        engine_details = api_response.get("engine_details", None)
+        fault_accident = api_response.get("fault_accident", None)
         has_engine_issue = api_response.get("has_engine_issue", False)
 
         # Create a single frame for all content
@@ -749,42 +749,45 @@ class ScreenshotApp:
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
         # Inspector Notes Section
-        notes_label = ttk.Label(
-            frame,
-            text="Inspector Notes",
-            font=("Arial", 11, "bold"),
-            foreground=self.colors["primary"]
-        )
-        notes_label.pack(anchor=tk.W, pady=(5, 0))
+        if inspector_notes and inspector_notes.strip():
+            notes_label = ttk.Label(
+                frame,
+                text="Inspector Notes",
+                font=("Arial", 11, "bold"),
+                foreground=self.colors["primary"]
+            )
+            notes_label.pack(anchor=tk.W, pady=(5, 0))
 
-        self.create_tables_from_html(frame, inspector_notes)
+            self.create_tables_from_html(frame, inspector_notes)
 
         # Engine Details Section
-        engine_label = ttk.Label(
-            frame,
-            text="Engine Details",
-            font=("Arial", 11, "bold"),
-            foreground=self.colors["primary"]
-        )
-        engine_label.pack(anchor=tk.W, pady=(5, 0))
+        if engine_details and engine_details.strip() and engine_details != "null":
+            engine_label = ttk.Label(
+                frame,
+                text="Engine Details",
+                font=("Arial", 11, "bold"),
+                foreground=self.colors["primary"]
+            )
+            engine_label.pack(anchor=tk.W, pady=(5, 0))
 
-        engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
-        engine_text.insert(tk.END, self.strip_html_tags(engine_details))
-        engine_text.config(state=tk.DISABLED)
-        if has_engine_issue:
-            engine_text.config(foreground="red")
-        engine_text.pack(fill=tk.X, pady=(0, 10))
+            engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
+            engine_text.insert(tk.END, self.strip_html_tags(engine_details))
+            engine_text.config(state=tk.DISABLED)
+            if has_engine_issue:
+                engine_text.config(foreground="red")
+            engine_text.pack(fill=tk.X, pady=(0, 10))
 
         # Fault/Accident Details Section
-        fault_label = ttk.Label(
-            frame,
-            text="Fault/Accident Details",
-            font=("Arial", 11, "bold"),
-            foreground=self.colors["primary"]
-        )
-        fault_label.pack(anchor=tk.W, pady=(5, 0))
+        if fault_accident and fault_accident.strip():
+            fault_label = ttk.Label(
+                frame,
+                text="Fault/Accident Details",
+                font=("Arial", 11, "bold"),
+                foreground=self.colors["primary"]
+            )
+            fault_label.pack(anchor=tk.W, pady=(5, 0))
 
-        self.create_tables_from_html(frame, fault_accident)
+            self.create_tables_from_html(frame, fault_accident)
 
         # Render the screenshot below the information
         img = screenshot_data.get("image")
@@ -820,7 +823,7 @@ class ScreenshotApp:
         open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
-
+        
     def strip_html_tags(self, html_text):
         """Remove HTML tags from text"""
         import re
