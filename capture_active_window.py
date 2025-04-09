@@ -924,62 +924,61 @@ class ScreenshotApp:
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
-            # Commented out the original API call
-            """
+          
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'your-api-key'
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
 
             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-            """
+          
 
-            # Mock response
-            mock_response = {
-                "engine_details": "null",
-                "fault_accident": """
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Japanese Text</th>
-                            <th>Spanish Translation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Fホースメン トイメ</td>
-                            <td>Imagen del refuerzo delantero.</td>
-                        </tr>
-                    </tbody>
-                </table>
-                """,
-                "has_engine_issue": False,
-                "inspector_notes": """
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Japanese Text</th>
-                            <th>Spanish Translation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>オートマ</td>
-                            <td>Automático</td>
-                        </tr>
-                        <tr>
-                            <td>下にハネ</td>
-                            <td>Salpicadura abajo</td>
-                        </tr>
-                    </tbody>
-                </table>
-                """
-            }
-            return mock_response
+            # # Mock response
+            # mock_response = {
+            #     "engine_details": "null",
+            #     "fault_accident": """
+            #     <table>
+            #         <thead>
+            #             <tr>
+            #                 <th>Japanese Text</th>
+            #                 <th>Spanish Translation</th>
+            #             </tr>
+            #         </thead>
+            #         <tbody>
+            #             <tr>
+            #                 <td>Fホースメン トイメ</td>
+            #                 <td>Imagen del refuerzo delantero.</td>
+            #             </tr>
+            #         </tbody>
+            #     </table>
+            #     """,
+            #     "has_engine_issue": False,
+            #     "inspector_notes": """
+            #     <table>
+            #         <thead>
+            #             <tr>
+            #                 <th>Japanese Text</th>
+            #                 <th>Spanish Translation</th>
+            #             </tr>
+            #         </thead>
+            #         <tbody>
+            #             <tr>
+            #                 <td>オートマ</td>
+            #                 <td>Automático</td>
+            #             </tr>
+            #             <tr>
+            #                 <td>下にハネ</td>
+            #                 <td>Salpicadura abajo</td>
+            #             </tr>
+            #         </tbody>
+            #     </table>
+            #     """
+            # }
+            # return mock_response
 
         except Exception as e:
             logging.error(f"Error in mock API call: {str(e)}")
