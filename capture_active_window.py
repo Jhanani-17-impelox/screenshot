@@ -757,37 +757,61 @@ class ScreenshotApp:
                 foreground=self.colors["primary"]
             )
             notes_label.pack(anchor=tk.W, pady=(5, 0))
+            data = api_response
 
-            self.create_tables_from_html(frame, inspector_notes)
+            html = """<html><body><h3>Inspector Notes</h3> <table border="1">
+  <thead>
+    <tr>
+      <th>Japanese</th>
+      <th>Spanish</th>
+    </tr>
+  </thead>
+  <tbody>"""
 
-        # Engine Details Section
-        if engine_details and engine_details.strip() and engine_details != "null":
-            engine_label = ttk.Label(
-                frame,
-                text="Engine Details",
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            engine_label.pack(anchor=tk.W, pady=(5, 0))
+            # Always show Inspector Notes first
+            if data.get('inspector_notes') and data['inspector_notes'].lower() != "null":
+               
+                html += data['inspector_notes']
 
-            engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
-            engine_text.insert(tk.END, self.strip_html_tags(engine_details))
-            engine_text.config(state=tk.DISABLED)
-            if has_engine_issue:
-                engine_text.config(foreground="red")
-            engine_text.pack(fill=tk.X, pady=(0, 10))
+            # Then Engine Details (if present), styled in red
+            if data.get('engine_details') and data['engine_details'].lower() != "null":
+                engine_html = data['engine_details'].replace('<td>', '<td style="color:red;">')
+                html += engine_html
 
-        # Fault/Accident Details Section
-        if fault_accident and fault_accident.strip():
-            fault_label = ttk.Label(
-                frame,
-                text="Fault/Accident Details",
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            fault_label.pack(anchor=tk.W, pady=(5, 0))
+            # Then Fault/Accident (if present)
+            if data.get('fault_accident') and data['fault_accident'].lower() != "null":
+               
+                html += data['fault_accident']
 
-            self.create_tables_from_html(frame, fault_accident)
+            html += "</tbody></table></body></html>"
+
+            print(html)
+
+
+            self.create_tables_from_html(frame, html)
+
+        # # Engine Details Section
+        # if engine_details and engine_details.strip() and engine_details != "null":
+        #     engine_label = ttk.Label(
+        #         frame,
+        #         text="Engine Details",
+        #         font=("Arial", 11, "bold"),
+        #         foreground=self.colors["primary"]
+        #     )
+        #     engine_label.pack(anchor=tk.W, pady=(5, 0))
+
+        #     engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
+        #     engine_text.insert(tk.END, self.strip_html_tags(engine_details))
+        #     engine_text.config(state=tk.DISABLED)
+        #     if has_engine_issue:
+        #         engine_text.config(foreground="red")
+        #     engine_text.pack(fill=tk.X, pady=(0, 10))
+
+        # # Fault/Accident Details Section
+        # if fault_accident and fault_accident.strip():
+            
+
+        #     self.create_tables_from_html(frame, fault_accident)
 
         # Render the screenshot below the information
         img = screenshot_data.get("image")
@@ -924,18 +948,27 @@ class ScreenshotApp:
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
-            # Commented out the original API call
-            
+          
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'your-api-key'
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
-
-            return json.loads(response.json().get("assistant_message"))
+            if response.status_code != 201 and response.status_code == 401:
+                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                return None
+            elif response.status_code == 500:
+                self.update_status("Server Error: Please try again later", "error")
+                return None
+            elif response.status_code == 201:
+                return json.loads(response.json().get("assistant_message"))
+            else:
+                self.update_status("Unexpected Error: Please try again", "error")
+                return None
+          
 
         except Exception as e:
             logging.error(f"Error in mock API call: {str(e)}")
