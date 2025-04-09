@@ -1,4 +1,4 @@
-###############this is the first 575 lines of code################
+###############this is the first 470 lines of code################
 
 import random
 import tkinter as tk
@@ -38,7 +38,9 @@ class HTMLDisplay:
     """A class to handle HTML rendering in the Tkinter app"""
     def __init__(self, parent, html_content, width=800, height=None, padx=10, pady=10):
         self.parent = parent
-        self.html_content = self._strip_styles(html_content)  # Remove styles from HTML content
+        
+        # Process the HTML content to ensure tables render properly
+        self.html_content = self._process_html(html_content)
         
         # Create the HTML display widget
         self.html_widget = HTMLScrolledText(
@@ -50,7 +52,6 @@ class HTMLDisplay:
             pady=pady
         )
         
-        
         # Configure styling and disable editing
         self.html_widget.configure(
             font=("Arial", 10),
@@ -59,87 +60,45 @@ class HTMLDisplay:
             state="disabled"  # Make the widget uneditable
         )
         
-        
     def pack(self, **kwargs):
         """Pack the HTML widget with the specified options"""
         self.html_widget.pack(**kwargs)
         
     def update_html(self, new_html):
         """Update the HTML content"""
-        self.html_content = self._strip_styles(new_html)  # Remove styles from new HTML content
+        self.html_content = self._process_html(new_html)
         self.html_widget.set_html(self.html_content)
         self.html_widget.configure(state="disabled")  # Ensure it remains uneditable
 
-
-    @staticmethod
-    def _strip_styles(html_content):
-        """Remove style definitions from the HTML content"""
-        import re
-        return re.sub(r"<style>.*?</style>", "", html_content, flags=re.DOTALL)
-
-
-    @staticmethod
-    def generate_html_response(inspector_notes, engine_details, fault_accident, has_engine_issue=False):
-        """Generate formatted HTML for the response"""
-        
-        # Define styles for the HTML content
-        engine_color = "#cc0000" if has_engine_issue else "#333333"
-        
-        html = f"""
-        <html>
-        <head>
-        <style>
-            body {{
-                font-family: 'Segoe UI', Arial, sans-serif;
-                color: #333333;
-                margin: 0;
-                padding: 0;
-            }}
-            .section {{
-                margin-bottom: 15px;
-                padding: 0;
-            }}
-            h3 {{
-                color: #4a6baf;
-                margin: 10px 0 5px 0;
-                padding: 0;
-                font-size: 14px;
-                border-bottom: 1px solid #e1e5eb;
-            }}
-            p {{
-                margin: 5px 0;
-                line-height: 1.4;
-                text-align: justify;
-            }}
-            .issue {{
-                color: {engine_color};
-            }}
-            .highlight {{
-                background-color: #fff3cd;
-                padding: 2px;
-            }}
-        </style>
-        </head>
-        <body>
-            <div class="section">
-                <h3>Inspector Notes</h3>
-                <p>{inspector_notes}</p>
-            </div>
-            
-            <div class="section">
-                <h3>Engine Details</h3>
-                <p class="issue">{engine_details}</p>
-            </div>
-            
-            <div class="section">
-                <h3>Fault/Accident Details</h3>
-                <p>{fault_accident}</p>
-            </div>
-        </body>
-        </html>
-        """
-        return html
-
+    def _process_html(self, html_content):
+        """Process HTML to ensure tables render properly without showing style tags"""
+        # Wrap the HTML in a proper HTML document structure if it's not already
+        if not html_content.strip().startswith("<html>"):
+            html_content = f"""
+            <html>
+            <head>
+            <style>
+                /* Table styling */
+                table {{ border-collapse: collapse; width: auto; margin: 10px 0; }}
+                th, td {{ border: 1px solid #000000; padding: 10px; text-align: left; }}
+                th {{ font-weight: bold; color: #1a237e; background-color: #ffffff; }}
+                td {{ background-color: #ffffff; }}
+                
+                /* Content styling */
+                .section {{ margin-bottom: 15px; padding: 0; }}
+                h3 {{ color: #4a6baf; margin: 10px 0 5px 0; padding: 0; font-size: 14px; border-bottom: 1px solid #e1e5eb; }}
+                p {{ margin: 5px 0; line-height: 1.4; text-align: justify; }}
+                .issue {{ color: #cc0000; }}
+                .highlight {{ background-color: #fff3cd; padding: 2px; }}
+            </style>
+            </head>
+            <body>
+            {html_content}
+            </body>
+            </html>
+            """
+        return html_content
+    
 class ScreenshotApp:
     def __init__(self, root):
         logger.info("ScreenshotApp initialized.")
@@ -469,6 +428,8 @@ class ScreenshotApp:
         capture_thread.daemon = True
         capture_thread.start()
     
+##########this is the next 530 lines of code#####################
+
     def get_window_info(self):
         system = platform.system()
         
@@ -775,7 +736,7 @@ class ScreenshotApp:
         
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
-        
+
         # Extract API response
         api_response = screenshot_data.get("api_response", {})
         inspector_notes = api_response.get("inspector_notes", "No Inspector Notes available")
@@ -783,44 +744,61 @@ class ScreenshotApp:
         fault_accident = api_response.get("fault_accident", "No Fault/Accident details available")
         has_engine_issue = api_response.get("has_engine_issue", False)
 
-        frame = ttk.Frame(self.screenshots_container)
+        # Create a single frame for all content
+        frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        # --- Combined Box for All Information ---
-        combined_frame = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
-        combined_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        # Render Inspector Notes
-        inspector_html = f"""
-        <div class="section">
-            <h3>Inspector Notes</h3>
-            {inspector_notes}
-        </div>
-        """
-        inspector_display = HTMLDisplay(combined_frame, inspector_html, width=800)
-        inspector_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-        # Render Engine Details
-        engine_html = f"""
-        <div class="section">
-            <h3>Engine Details</h3>
-            <p class="{'issue' if has_engine_issue else ''}">{engine_details}</p>
-        </div>
-        """
-        engine_display = HTMLDisplay(combined_frame, engine_html, width=800)
-        engine_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-        # Render Fault/Accident Details
-        fault_html = f"""
-        <div class="section">
-            <h3>Fault/Accident Details</h3>
-            {fault_accident}
-        </div>
-        """
-        fault_display = HTMLDisplay(combined_frame, fault_html, width=800)
-        fault_display.pack(fill=tk.BOTH, expand=True)
-
-        # --- Screenshot Below ---
+        # Create sections for text content
+        # Inspector Notes Section
+        notes_label = ttk.Label(
+            frame,
+            text="Inspector Notes",
+            font=("Arial", 11, "bold"),
+            foreground=self.colors["primary"]
+        )
+        notes_label.pack(anchor=tk.W, pady=(5, 0))
+        
+        notes_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
+        notes_text.insert(tk.END, self.strip_html_tags(inspector_notes))
+        notes_text.config(state=tk.DISABLED)
+        notes_text.pack(fill=tk.X, pady=(0, 10))
+        
+        # Engine Details Section
+        engine_label = ttk.Label(
+            frame,
+            text="Engine Details",
+            font=("Arial", 11, "bold"),
+            foreground=self.colors["primary"]
+        )
+        engine_label.pack(anchor=tk.W, pady=(5, 0))
+        
+        engine_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
+        engine_text.insert(tk.END, self.strip_html_tags(engine_details))
+        engine_text.config(state=tk.DISABLED)
+        if has_engine_issue:
+            engine_text.config(foreground="red")
+        engine_text.pack(fill=tk.X, pady=(0, 10))
+        
+        # Fault/Accident Details Section
+        fault_label = ttk.Label(
+            frame,
+            text="Fault/Accident Details",
+            font=("Arial", 11, "bold"),
+            foreground=self.colors["primary"]
+        )
+        fault_label.pack(anchor=tk.W, pady=(5, 0))
+        
+        fault_text = scrolledtext.ScrolledText(frame, height=3, wrap=tk.WORD)
+        fault_text.insert(tk.END, self.strip_html_tags(fault_accident))
+        fault_text.config(state=tk.DISABLED)
+        fault_text.pack(fill=tk.X, pady=(0, 10))
+        
+        # Check for and create tables from additional_html
+        additional_html = api_response.get("additional_html", "")
+        if additional_html and "<table>" in additional_html:
+            self.create_tables_from_html(frame, additional_html)
+        
+        # Render the screenshot below the information
         img = screenshot_data.get("image")
         if img:
             max_width = 600
@@ -832,33 +810,101 @@ class ScreenshotApp:
             photo = ImageTk.PhotoImage(thumbnail)
             screenshot_data["photo"] = photo
 
-            image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
-            image_frame.pack(pady=5)
-
-            image_label = ttk.Label(image_frame, image=photo)
+            image_label = ttk.Label(frame, image=photo)
             image_label.image = photo
-            image_label.pack()
+            image_label.pack(pady=10)
 
-        # --- Header for Open Button ---
-        title_frame = ttk.Frame(frame)
-        title_frame.pack(fill=tk.X)
-
+        # Add a header with the title and timestamp
         title_label = ttk.Label(
-            title_frame,
+            frame,
             text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
             font=("Arial", 10, "bold"),
             foreground=self.colors["primary"]
         )
-        title_label.pack(side=tk.LEFT, pady=5)
+        title_label.pack(pady=(5, 0))
 
+        # Add an "Open Image" button
         open_button = ttk.Button(
-            title_frame,
+            frame,
             text="Open Image",
             command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
         )
-        open_button.pack(side=tk.RIGHT, padx=5)
+        open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
+
+    def strip_html_tags(self, html_text):
+        """Remove HTML tags from text"""
+        import re
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', html_text)
+
+    def create_tables_from_html(self, parent_frame, html_content):
+        """Parse HTML tables and create Tkinter tables"""
+        import re
+        
+        # Find all table sections in the HTML
+        table_sections = re.findall(r'<h3>(.*?)</h3>.*?<table>(.*?)</table>', html_content, re.DOTALL)
+        
+        for section_title, table_html in table_sections:
+            # Create a section header
+            section_label = ttk.Label(
+                parent_frame,
+                text=section_title,
+                font=("Arial", 11, "bold"),
+                foreground=self.colors["primary"]
+            )
+            section_label.pack(anchor=tk.W, pady=(10, 5))
+            
+            # Create a frame for the table
+            table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
+            table_frame.pack(fill=tk.X, pady=(0, 10))
+            
+            # Parse table headers
+            headers = re.findall(r'<th>(.*?)</th>', table_html)
+            
+            # Parse table rows
+            rows = []
+            row_matches = re.findall(r'<tr>(.*?)</tr>', table_html)
+            for row_html in row_matches:
+                if '<th>' in row_html:  # Skip header row
+                    continue
+                cells = re.findall(r'<td>(.*?)</td>', row_html)
+                rows.append(cells)
+            
+            # Create the table headers
+            for i, header in enumerate(headers):
+                header_label = ttk.Label(
+                    table_frame,
+                    text=header,
+                    font=("Arial", 10, "bold"),
+                    foreground=self.colors["primary"],
+                    background="white",
+                    borderwidth=1,
+                    relief="solid",
+                    padding=8,
+                    anchor="w"
+                )
+                header_label.grid(row=0, column=i, sticky="nsew")
+                table_frame.columnconfigure(i, weight=1)
+            
+            # Create the table rows
+            for i, row in enumerate(rows):
+                for j, cell in enumerate(row):
+                    # Handle line breaks in cells
+                    cell_text = cell.replace('<br>', '\n')
+                    cell_text = self.strip_html_tags(cell_text)
+                    
+                    cell_label = ttk.Label(
+                        table_frame,
+                        text=cell_text,
+                        borderwidth=1,
+                        relief="solid",
+                        padding=8,
+                        background="white",
+                        anchor="w"
+                    )
+                    cell_label.grid(row=i+1, column=j, sticky="nsew")
 
     def open_screenshot(self, path):
         try:
@@ -893,34 +939,12 @@ class ScreenshotApp:
     def on_close(self):
         self.root.destroy()
         
-    # def make_api_call(self, payload):
-    #     self.show_loader()  # Show loader centered on the screen
-    #     try:
-    #         url = "http://localhost:8001/v1/chat"
-    #         headers = {
-    #             "Content-Type": "application/json",
-    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
-    #         }
 
-    #         response = requests.post(url, json=payload, headers=headers)
-    #         print("Response:", response)  # Debugging line to check the response
-    #         print("Response:", response.status_code)  # Debugging line to check the response
-    #         if response.status_code == 201:
-    #             response.raise_for_status()
-
-    #             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
-
-    #     except requests.exceptions.RequestException as e:
-    #         print("The error is:", str(e))
-    #         return "Unauthorized User:its seems you don't have permission, contact your admin"
-
-    #     finally:
-    #         self.hide_loader()  # Hide loader when API call is complete
 
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
-            # Keep the commented out original API call
+            # Commented out the original API call
             """
             url = "http://localhost:8001/v1/chat"
             headers = {
@@ -929,32 +953,30 @@ class ScreenshotApp:
             }
 
             response = requests.post(url, json=payload, headers=headers)
-            
             response.raise_for_status()
 
             return json.loads(response.json().get("assistant_message").replace("```json", "").replace("```", ""))
             """
-            
-            # Instead, generate a richer HTML mock response
+
+            # Mock response
             has_engine_issue = True if random.random() > 0.7 else False
-            
-            # Base content - same as before but with some formatting
+
             inspector_notes = """
             Vehicle inspection completed on <b>April 8, 2025</b>. The vehicle appears to be in 
             <span class="highlight">generally good condition</span> with some minor issues noted. 
             Regular maintenance has been performed according to service records provided by owner.
             """
-            
+
             engine_details = """
             2.5L 4-cylinder DOHC engine with VVT. Engine sounds normal with no unusual noises. 
             Oil level is adequate but <b>due for change within 500 miles</b>. 
             Some oil seepage noted around valve cover gasket that should be monitored.
             """
-            
+
             if has_engine_issue:
                 engine_details += """ <b>WARNING:</b> Intermittent engine misfire detected 
                 during cold start. Recommend diagnostics for potential fuel injector issue."""
-            
+
             fault_accident = """
             Minor scrape on rear bumper, likely from parking incident. 
             Driver side mirror shows signs of previous repair. 
@@ -962,14 +984,68 @@ class ScreenshotApp:
             Check engine light intermittently appears according to owner, 
             correlated with cold weather starts.
             """
-            
+
+            # Additional HTML content
+            additional_html = """
+            <style>
+            table { border-collapse: collapse; border: 1px solid #E1E5EB; width: 100%; }
+            th, td { border: 1px solid #E1E5EB; padding: 8px; text-align: left; }
+            th { background-color: #F2F2F2; }
+            h3 {
+                color: #4A6BAF;
+                font-size: 14px;
+                margin: 10px 0 5px 0;
+                border-bottom: 1px solid #E1E5EB;
+            }
+            p {
+                margin: 2px 0 8px 0;
+                text-align: justify;
+                font-size: 13px;
+            }
+            .issue {
+                color: #D9534F;
+            }
+            </style>
+            <h3>Inspector Notes</h3>
+            <table>
+            <thead>
+                <tr>
+                <th>Japanese Text</th>
+                <th>Spanish Translation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>オートマミッション水<br>下仁术<br>Hライトメッキ・桜水<br>Fホースメントイメ</td>
+                <td>Agua de la transmisión automática<br>Debajo del personal<br>Luz alta cromada, agua de cerezo<br>Imagen del puntal F</td>
+                </tr>
+            </tbody>
+            </table>
+            <h3>Fault/Accident Details</h3>
+            <table>
+            <thead>
+                <tr>
+                <th>Japanese Text</th>
+                <th>Spanish Translation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>チャコウス A</td>
+                <td>Chaqueta A</td>
+                </tr>
+            </tbody>
+            </table>
+            """
+
             # Return both the raw data and HTML version
             mock_response = {
                 "inspector_notes": inspector_notes.strip(),
                 "engine_details": engine_details.strip(),
                 "fault_accident": fault_accident.strip(),
                 "has_engine_issue": has_engine_issue,
-                "html_response": True  # Flag to indicate this is an HTML response
+                "html_response": True,  # Flag to indicate this is an HTML response
+                "additional_html": additional_html.strip()
             }
             return mock_response
 
@@ -985,7 +1061,6 @@ class ScreenshotApp:
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
-
             
 if __name__ == "__main__":
     root = tk.Tk()
