@@ -761,7 +761,7 @@ class ScreenshotApp:
                 frame,
                 text=inspector_notes.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
-                wraplength=600,  # Wrap text to fit within the frame
+                wraplength=1000,  # Wrap text to fit within the frame
                 justify=tk.LEFT
             )
             inspector_text.pack(anchor=tk.W, pady=(0, 10))
@@ -780,7 +780,7 @@ class ScreenshotApp:
                 frame,
                 text=engine_details.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=1000,
                 justify=tk.LEFT
             )
             engine_text.pack(anchor=tk.W, pady=(0, 10))
@@ -799,7 +799,7 @@ class ScreenshotApp:
                 frame,
                 text=fault_accident.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=1000,
                 justify=tk.LEFT
             )
             fault_text.pack(anchor=tk.W, pady=(0, 10))
