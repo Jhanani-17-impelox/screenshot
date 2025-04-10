@@ -656,7 +656,7 @@ class ScreenshotApp:
             result = self.make_api_call(payload_json)
             print(result)
             if type(result) == str or result==None:
-                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                self.update_status("Server Error: Please try again later", "error")
                 return
             else:
                 self.save_payload_to_file(payload_json)
