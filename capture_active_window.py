@@ -761,7 +761,7 @@ class ScreenshotApp:
                 frame,
                 text=inspector_notes.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,  # Wrap text to fit within the frame
+                wraplength=1000,  # Wrap text to fit within the frame
                 justify=tk.LEFT
             )
             inspector_text.pack(anchor=tk.W, pady=(0, 10))
@@ -780,7 +780,7 @@ class ScreenshotApp:
                 frame,
                 text=engine_details.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=1000,
                 justify=tk.LEFT
             )
             engine_text.pack(anchor=tk.W, pady=(0, 10))
@@ -799,7 +799,7 @@ class ScreenshotApp:
                 frame,
                 text=fault_accident.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=1000,
                 justify=tk.LEFT
             )
             fault_text.pack(anchor=tk.W, pady=(0, 10))
@@ -950,61 +950,62 @@ class ScreenshotApp:
     def on_close(self):
         self.root.destroy()
         
-    # def make_api_call(self, payload):
-    #     self.show_loader()  # Show loader centered on the screen
-    #     try:
-          
-    #         url = "http://localhost:8001/v1/chat"
-    #         headers = {
-    #             "Content-Type": "application/json",
-    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
-    #         }
-
-    #         response = requests.post(url, json=payload, headers=headers)
-    #         response.raise_for_status()
-    #         if response.status_code != 201 and response.status_code == 401:
-    #             self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
-    #             return None
-    #         elif response.status_code == 500:
-    #             self.update_status("Server Error: Please try again later", "error")
-    #             return None
-    #         elif response.status_code == 201:
-    #             return json.loads(response.json().get("assistant_message"))
-    #         else:
-    #             self.update_status("Unexpected Error: Please try again", "error")
-    #             return None
-          
-
-    #     except Exception as e:
-    #         logging.error(f"Error in mock API call: {str(e)}")
-    #         return None
-
-    #     finally:
-    #         self.hide_loader()  # Hide loader when API call is complete
-
     def make_api_call(self, payload):
         self.show_loader()  # Show loader centered on the screen
         try:
-            # Mock response
-            mock_response = {
-                "engine_details": "null",
-                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-                "has_engine_issue": False,
-                "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
+          
+            url = "http://localhost:8001/v1/chat"
+            headers = {
+                "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
-            return mock_response
+
+            response = requests.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            
+            if response.status_code != 201 and response.status_code == 401:
+                self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
+                return None
+            elif response.status_code == 500:
+                self.update_status("Server Error: Please try again later", "error")
+                return None
+            elif response.status_code == 201:
+                return json.loads(response.json().get("assistant_message"))
+            else:
+                self.update_status("Unexpected Error: Please try again", "error")
+                return None
+          
 
         except Exception as e:
             logging.error(f"Error in mock API call: {str(e)}")
-            return {
-                "inspector_notes": "Error retrieving inspector notes.",
-                "engine_details": "Error retrieving engine details.",
-                "fault_accident": "Error retrieving fault/accident information.",
-                "has_engine_issue": False
-            }
+            return None
 
         finally:
             self.hide_loader()  # Hide loader when API call is complete
+
+    # def make_api_call(self, payload):
+    #     self.show_loader()  # Show loader centered on the screen
+    #     try:
+    #         # Mock response
+    #         mock_response = {
+    #             "engine_details": "null",
+    #             "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
+    #             "has_engine_issue": False,
+    #             "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
+    #         }
+    #         return mock_response
+
+    #     except Exception as e:
+    #         logging.error(f"Error in mock API call: {str(e)}")
+    #         return {
+    #             "inspector_notes": "Error retrieving inspector notes.",
+    #             "engine_details": "Error retrieving engine details.",
+    #             "fault_accident": "Error retrieving fault/accident information.",
+    #             "has_engine_issue": False
+    #         }
+
+    #     finally:
+    #         self.hide_loader()  # Hide loader when API call is complete
 
 
 if __name__ == "__main__":
