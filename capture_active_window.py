@@ -759,7 +759,7 @@ class ScreenshotApp:
 
             inspector_text = ttk.Label(
                 frame,
-                text=inspector_notes.strip(),
+                text=inspector_notes.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
                 wraplength=600,  # Wrap text to fit within the frame
                 justify=tk.LEFT
@@ -778,7 +778,7 @@ class ScreenshotApp:
 
             engine_text = ttk.Label(
                 frame,
-                text=engine_details.strip(),
+                text=engine_details.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
                 wraplength=600,
                 justify=tk.LEFT
@@ -797,7 +797,7 @@ class ScreenshotApp:
 
             fault_text = ttk.Label(
                 frame,
-                text=fault_accident.strip(),
+                text=fault_accident.replace("\n", "\n").strip(),  # Ensure only \n causes a new line
                 font=("Arial", 10),
                 wraplength=600,
                 justify=tk.LEFT
@@ -845,63 +845,6 @@ class ScreenshotApp:
         clean = re.compile('<.*?>')
         return re.sub(clean, '', html_text)
 
-    # def create_tables_from_html(self, parent_frame, html_content):
-    #     """Parse HTML tables and create Tkinter tables"""
-    #     import re
-
-    #     # Find all table sections in the HTML
-    #     table_sections = re.findall(r'<table>(.*?)</table>', html_content, re.DOTALL)
-
-    #     for table_html in table_sections:
-    #         # Create a frame for the table
-    #         table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
-    #         table_frame.pack(fill=tk.X, pady=(10, 10))
-
-    #         # Parse table headers
-    #         headers = re.findall(r'<th>(.*?)</th>', table_html)
-
-    #         # Parse table rows
-    #         rows = []
-    #         row_matches = re.findall(r'<tr>(.*?)</tr>', table_html, re.DOTALL)
-    #         for row_html in row_matches:
-    #             if '<th>' in row_html:  # Skip header row
-    #                 continue
-    #             cells = re.findall(r'<td>(.*?)</td>', row_html, re.DOTALL)
-    #             rows.append(cells)
-
-    #         # Create the table headers
-    #         for i, header in enumerate(headers):
-    #             header_label = ttk.Label(
-    #                 table_frame,
-    #                 text=header,
-    #                 font=("Arial", 10, "bold"),
-    #                 foreground=self.colors["primary"],
-    #                 background="white",
-    #                 borderwidth=1,
-    #                 relief="solid",
-    #                 padding=8,
-    #                 anchor="w"
-    #             )
-    #             header_label.grid(row=0, column=i, sticky="nsew")
-    #             table_frame.columnconfigure(i, weight=1)
-
-    #         # Create the table rows
-    #         for i, row in enumerate(rows):
-    #             for j, cell in enumerate(row):
-    #                 # Handle line breaks in cells
-    #                 cell_text = cell.replace('<br>', '\n')
-    #                 cell_text = self.strip_html_tags(cell_text)
-
-    #                 cell_label = ttk.Label(
-    #                     table_frame,
-    #                     text=cell_text,
-    #                     borderwidth=1,
-    #                     relief="solid",
-    #                     padding=8,
-    #                     background="white",
-    #                     anchor="w"
-    #                 )
-    #                 cell_label.grid(row=i + 1, column=j, sticky="nsew")
 
     
     def create_tables_from_html(self, parent_frame, html_content):
