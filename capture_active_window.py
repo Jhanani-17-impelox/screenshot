@@ -949,62 +949,71 @@ class ScreenshotApp:
     
     def on_close(self):
         self.root.destroy()
-        
+    def make_api_call(self, payload):
+        """Make an API call and stream updates to the interface."""
+        self.show_loader()  # Show loader centered on the screen
+        self.streaming_data = []  # Initialize a list to store streamed data
+
+        def stream_updates():
+            try:
+                url = "http://localhost:8001/v1/chat"
+                headers = {
+                    "Content-Type": "application/json",
+                    'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                }
+
+                response = requests.post(url, json=payload, headers=headers, stream=True)
+                response.raise_for_status()
+
+                # Stream data line by line
+                for line in response.iter_lines():
+                    if line:
+                        data = json.loads(line.decode('utf-8'))
+                        self.streaming_data.append(data)
+                        self.update_interface(data)  # Update the interface with new data
+
+            except Exception as e:
+                logging.error(f"Error in streaming API call: {str(e)}")
+                self.update_status(f"Error in streaming API call: {str(e)}", "error")
+
+            finally:
+                self.hide_loader()  # Hide loader when streaming is complete
+
+        # Use threading to avoid blocking the main Tkinter loop
+        threading.Thread(target=stream_updates, daemon=True).start()
+
+    def update_interface(self, data):
+        """Update the interface with streamed data."""
+        # Example: Update the status label with the latest data
+        inspector_notes = data.get("inspector_notes", "No updates yet.")
+        self.status_label.configure(text=f"Streaming Update: {inspector_notes}")
+
+        # Schedule the next update using after()
+        self.root.after(100, lambda: self.update_interface(data))
+
     # def make_api_call(self, payload):
     #     self.show_loader()  # Show loader centered on the screen
     #     try:
-          
-    #         url = "http://localhost:8001/v1/chat"
-    #         headers = {
-    #             "Content-Type": "application/json",
-    #             'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+    #         # Mock response
+    #         mock_response = {
+    #             "engine_details": "null",
+    #             "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
+    #             "has_engine_issue": False,
+    #             "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
     #         }
-
-    #         response = requests.post(url, json=payload, headers=headers)
-    #         response.raise_for_status()
-    #         if response.status_code != 201 and response.status_code == 401:
-    #             self.update_status("Unauthorized User:its seems you don't have permission, contact your admin", "error")
-    #             return None
-    #         elif response.status_code == 500:
-    #             self.update_status("Server Error: Please try again later", "error")
-    #             return None
-    #         elif response.status_code == 201:
-    #             return json.loads(response.json().get("assistant_message"))
-    #         else:
-    #             self.update_status("Unexpected Error: Please try again", "error")
-    #             return None
-          
+    #         return mock_response
 
     #     except Exception as e:
     #         logging.error(f"Error in mock API call: {str(e)}")
-    #         return None
+    #         return {
+    #             "inspector_notes": "Error retrieving inspector notes.",
+    #             "engine_details": "Error retrieving engine details.",
+    #             "fault_accident": "Error retrieving fault/accident information.",
+    #             "has_engine_issue": False
+    #         }
 
     #     finally:
     #         self.hide_loader()  # Hide loader when API call is complete
-
-    def make_api_call(self, payload):
-        self.show_loader()  # Show loader centered on the screen
-        try:
-            # Mock response
-            mock_response = {
-                "engine_details": "null",
-                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-                "has_engine_issue": False,
-                "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
-            }
-            return mock_response
-
-        except Exception as e:
-            logging.error(f"Error in mock API call: {str(e)}")
-            return {
-                "inspector_notes": "Error retrieving inspector notes.",
-                "engine_details": "Error retrieving engine details.",
-                "fault_accident": "Error retrieving fault/accident information.",
-                "has_engine_issue": False
-            }
-
-        finally:
-            self.hide_loader()  # Hide loader when API call is complete
 
 
 if __name__ == "__main__":
