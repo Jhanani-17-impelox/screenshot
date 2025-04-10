@@ -988,7 +988,7 @@ class ScreenshotApp:
             # Mock response
             mock_response = {
                 "engine_details": "null",
-                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有  (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
+                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
                 "has_engine_issue": False,
                 "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
             }
