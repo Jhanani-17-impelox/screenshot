@@ -743,67 +743,57 @@ class ScreenshotApp:
         inspector_notes = api_response.get("inspector_notes", None)
         engine_details = api_response.get("engine_details", None)
         fault_accident = api_response.get("fault_accident", None)
+        has_engine_issue = api_response.get("has_engine_issue", False)
 
         # Create a single frame for all content
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
+        # Create a text widget for formatted display
+        text_display = tk.Text(
+            frame,
+            wrap=tk.WORD,
+            width=70,
+            height=20,
+            font=("Arial", 11),
+            bg="white",
+            padx=10,
+            pady=10
+        )
+        text_display.pack(fill=tk.BOTH, expand=True)
+        
+        # Configure text tags for styling
+        text_display.tag_configure("bold", font=("Arial", 12, "bold"))
+        text_display.tag_configure("regular", font=("Arial", 11))
+        text_display.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+        
         # Inspector Notes Section
         if inspector_notes and inspector_notes.strip():
-            inspector_label = ttk.Label(
-                frame,
-                text="Inspector Notes:",
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            inspector_label.pack(anchor=tk.W, pady=(5, 0))
+            text_display.insert(tk.END, "Inspector Notes", "bold")
+            text_display.insert(tk.END, ":\n")
+            text_display.insert(tk.END, inspector_notes.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
+            text_display.insert(tk.END, "\n\n")
 
-            inspector_text = ttk.Label(
-                frame,
-                text=inspector_notes.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
-                font=("Arial", 10),
-                wraplength=600,  # Wrap text to fit within the frame
-                justify=tk.LEFT
-            )
-            inspector_text.pack(anchor=tk.W, pady=(0, 10))
-
-        # Engine Details Section
+        # Engine Details Section (with red highlighting if engine issue)
         if engine_details and engine_details.strip() and engine_details.lower() != "null":
-            engine_label = ttk.Label(
-                frame,
-                text="Engine Details:",
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            engine_label.pack(anchor=tk.W, pady=(5, 0))
-
-            engine_text = ttk.Label(
-                frame,
-                text=engine_details.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
-                font=("Arial", 10),
-                wraplength=600,
-                justify=tk.LEFT
-            )
-            engine_text.pack(anchor=tk.W, pady=(0, 10))
+            if has_engine_issue:
+                text_display.insert(tk.END, "<<<Engine Issue>>>", "engine_issue")
+            else:
+                text_display.insert(tk.END, "Engine Details", "bold")
+            
+            text_display.insert(tk.END, ":\n")
+            text_display.insert(tk.END, engine_details.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
+            text_display.insert(tk.END, "\n\n")
 
         # Fault/Accident Details Section
         if fault_accident and fault_accident.strip():
-            fault_label = ttk.Label(
-                frame,
-                text="Fault/Accident Details:",
-                font=("Arial", 11, "bold"),
-                foreground=self.colors["primary"]
-            )
-            fault_label.pack(anchor=tk.W, pady=(5, 0))
-
-            fault_text = ttk.Label(
-                frame,
-                text=fault_accident.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
-                font=("Arial", 10),
-                wraplength=600,
-                justify=tk.LEFT
-            )
-            fault_text.pack(anchor=tk.W, pady=(0, 10))
+            text_display.insert(tk.END, "Fault/Accident Details", "bold")
+            text_display.insert(tk.END, ":\n")
+            text_display.insert(tk.END, fault_accident.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
+            text_display.insert(tk.END, "\n\n")
+        
+        # Make the text widget read-only
+        text_display.config(state=tk.DISABLED)
 
         # Render the screenshot below the information
         img = screenshot_data.get("image")
@@ -839,6 +829,7 @@ class ScreenshotApp:
         open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
+
         
     def strip_html_tags(self, html_text):
         """Remove HTML tags from text"""
@@ -967,23 +958,8 @@ class ScreenshotApp:
             # For real API response, we need to parse the JSON
             formatted_data = json.loads(json.loads(response_data).get("assistant_message"))
         
-        # Format the data into a more readable structure
-        sections = []
-        
-        # Format inspector notes section
-        if formatted_data.get("inspector_notes"):
-            sections.append("Inspector Notes:\n" + formatted_data.get("inspector_notes", ""))
-        
-        # Format engine details section
-        if formatted_data.get("engine_details") and formatted_data.get("engine_details") != "null":
-            sections.append("Engine Details:\n" + formatted_data.get("engine_details", ""))
-        
-        # Format fault/accident section
-        if formatted_data.get("fault_accident"):
-            sections.append("Fault/Accident Details:\n" + formatted_data.get("fault_accident", ""))
-        
-        # Join all sections
-        full_formatted_text = "\n\n".join(sections)
+        # Format the data into the new required structure
+        full_formatted_text = self.format_api_response_new(formatted_data)
         
         # Now simulate streaming for both real and mock data
         display_text = ""
@@ -1004,9 +980,9 @@ class ScreenshotApp:
         try:
             # MOCK IMPLEMENTATION - Comment this section to use the real API
             mock_response = {
-                "engine_details": "null",
+                "engine_details": "Engine has water damage and rust on components.",  # Changed to include an issue
                 "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-                "has_engine_issue": False,
+                "has_engine_issue": True,  # Set to True to test engine issue highlighting
                 "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
             }
             
@@ -1046,11 +1022,8 @@ class ScreenshotApp:
                     return None
 
             # Process the streaming response
-            full_response = ""
-            display_text = ""
-
-            # Create a buffer to accumulate partial JSON chunks
             buffer = ""
+            full_response = None
 
             # Stream the response as it comes in
             for chunk in response.iter_content(chunk_size=1024):
@@ -1067,8 +1040,8 @@ class ScreenshotApp:
                         if "assistant_message" in parsed_data:
                             message_data = json.loads(parsed_data["assistant_message"])
                             
-                            # Format the response data
-                            formatted_text = self.format_api_response(message_data)
+                            # Format the response data for streaming display
+                            formatted_text = self.format_api_response_new(message_data)
                             
                             # Update the display with formatted text
                             self.update_streaming_display(formatted_text)
@@ -1087,26 +1060,6 @@ class ScreenshotApp:
             # Return the final parsed response
             return full_response
             """
-
-            # Add this helper method to format the API response
-            def format_api_response(self, data):
-                """Format the API response data into readable sections"""
-                sections = []
-                
-                # Format inspector notes section
-                if data.get("inspector_notes"):
-                    sections.append("Inspector Notes:\n" + data.get("inspector_notes", ""))
-                
-                # Format engine details section
-                if data.get("engine_details") and data.get("engine_details") != "null":
-                    sections.append("Engine Details:\n" + data.get("engine_details", ""))
-                
-                # Format fault/accident section
-                if data.get("fault_accident"):
-                    sections.append("Fault/Accident Details:\n" + data.get("fault_accident", ""))
-                
-                # Join all sections
-                return "\n\n".join(sections)
         
         except Exception as e:
             logging.error(f"Error in API call: {str(e)}")
@@ -1118,53 +1071,106 @@ class ScreenshotApp:
             # Add a small delay before removing the streaming display to let the user see the final result
             self.root.after(2000, self.remove_streaming_display)
 
+
+    def format_api_response_new(self, data):
+        """Format the API response data into the new required format:
+        inspector notes <<<engine issue>>> fault tolerance
+        """
+        # Get the components
+        inspector_notes = data.get("inspector_notes", "").strip()
+        engine_details = data.get("engine_details", "").strip()
+        fault_accident = data.get("fault_accident", "").strip()
+        has_engine_issue = data.get("has_engine_issue", False)
+        
+        # Construct the response string
+        response_parts = []
+        
+        # Add inspector notes
+        if inspector_notes:
+            response_parts.append(f"**Inspector Notes:**\n{inspector_notes}")
+        
+        # Add engine issue if it exists
+        if has_engine_issue and engine_details and engine_details.lower() != "null":
+            response_parts.append(f"**<<<Engine Issue>>>:**\n{engine_details}")
+        
+        # Add fault/accident details
+        if fault_accident:
+            response_parts.append(f"**Fault/Accident Details:**\n{fault_accident}")
+        
+        # Join all sections with two newlines
+        return "\n\n".join(response_parts)
+
     def create_streaming_display(self):
-        """Create a UI element in the main UI to display streaming API response"""
+        """Create a Text widget to display streaming API response using markdown"""
         if not hasattr(self, 'streaming_text'):
-            # Add a ScrolledText widget to the main UI if it doesn't exist
-            self.streaming_text = scrolledtext.ScrolledText(
-                self.screenshots_container,  # Place it in the main UI
+            # Create a frame for the streaming display
+            self.streaming_frame = ttk.Frame(self.screenshots_container)
+            self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+            
+            # Add a Text widget with markdown support
+            self.streaming_text = tk.Text(
+                self.streaming_frame,
                 wrap=tk.WORD,
                 width=70,
                 height=20,
                 font=("Arial", 11),
-                bg="white"
+                bg="white",
+                padx=10,
+                pady=10
             )
-            self.streaming_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
-            # Apply text tags for styling
-            self.streaming_text.tag_configure("section_title", font=("Arial", 12, "bold"), foreground=self.colors["primary"])
-            self.streaming_text.tag_configure("section_content", font=("Arial", 11))
-
+            self.streaming_text.pack(fill=tk.BOTH, expand=True)
+            
+            # Disable scrolling by not including a scrollbar
+            
+            # Configure text tags for styling
+            self.streaming_text.tag_configure("bold", font=("Arial", 12, "bold"))
+            self.streaming_text.tag_configure("regular", font=("Arial", 11))
+            self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+            
             self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
 
     def update_streaming_display(self, text):
-        """Update the main UI with the latest formatted text"""
-        if hasattr(self, 'streaming_text'):
-            self.streaming_text.config(state=tk.NORMAL)  # Allow editing
-            self.streaming_text.delete(1.0, tk.END)  # Clear existing text
-
-            # Apply formatting and styling to the text
-            sections = text.split("\n\n")
-            for section in sections:
-                if ":" in section:
-                    # Split the section into title and content
-                    title_end = section.find(":")
-                    title = section[:title_end+1]
-                    content = section[title_end+1:]
-
-                    # Insert title with styling
-                    self.streaming_text.insert(tk.END, title, "section_title")
-                    # Insert content with styling
-                    self.streaming_text.insert(tk.END, content, "section_content")
-                    self.streaming_text.insert(tk.END, "\n\n")
+        """Update the main UI with markdown formatted text"""
+        if not hasattr(self, 'streaming_text'):
+            self.create_streaming_display()
+            
+        self.streaming_text.config(state=tk.NORMAL)  # Allow editing
+        self.streaming_text.delete(1.0, tk.END)  # Clear existing text
+        
+        # Split the text into lines to process markdown
+        lines = text.split('\n')
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            
+            # Handle bold text (section titles)
+            if line.startswith('**') and line.endswith(':**'):
+                title = line.strip('*:')
+                
+                # Check if this is an engine issue section
+                if "<<<Engine Issue>>>" in title:
+                    self.streaming_text.insert(tk.END, title, "engine_issue")
                 else:
-                    # If no title is found, just insert the text normally
-                    self.streaming_text.insert(tk.END, section, "section_content")
-                    self.streaming_text.insert(tk.END, "\n\n")
-
-            self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
-            self.streaming_text.see(tk.END)  # Scroll to the end
+                    self.streaming_text.insert(tk.END, title, "bold")
+                    
+                self.streaming_text.insert(tk.END, ":\n")
+                i += 1
+                
+                # Add content until next section or end
+                content = []
+                while i < len(lines) and not (lines[i].startswith('**') and lines[i].endswith(':**')):
+                    content.append(lines[i])
+                    i += 1
+                    
+                self.streaming_text.insert(tk.END, "\n".join(content), "regular")
+                self.streaming_text.insert(tk.END, "\n\n")
+            else:
+                # Regular text
+                self.streaming_text.insert(tk.END, line, "regular")
+                self.streaming_text.insert(tk.END, "\n")
+                i += 1
+        
+        self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
 
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
