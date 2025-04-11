@@ -1038,38 +1038,43 @@ class ScreenshotApp:
         finally:
             self.hide_loader()
             self.root.after(2000, self.remove_streaming_display)
+
     def create_streaming_display(self):
-        """Create a UI element to display streaming API response"""
-        self.streaming_frame = tk.Frame(self.root, bg=self.colors["bg_light"], bd=2, relief="solid")
-        self.streaming_frame.place(relx=0.5, rely=0.5, anchor="center", width=600, height=400)
-        
-        streaming_title = ttk.Label(
-            self.streaming_frame,
-            text="Processing Image...",
-            font=("Arial", 14, "bold"),
-            foreground=self.colors["primary"],
-            background=self.colors["bg_light"]
-        )
-        streaming_title.pack(pady=(10, 5))
-        
-        self.streaming_text = scrolledtext.ScrolledText(
-            self.streaming_frame,
-            wrap=tk.WORD,
-            width=70,
-            height=20,
-            font=("Arial", 11),
-            bg="white"
-        )
-        self.streaming_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        
-        # Apply text tags for styling
-        self.streaming_text.tag_configure("section_title", font=("Arial", 12, "bold"), foreground=self.colors["primary"])
-        self.streaming_text.tag_configure("section_content", font=("Arial", 11))
-        
-        self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
+        """Create a UI element to display streaming API response in the main layout"""
+        # Add a frame for the streaming response in the main layout
+        if not hasattr(self, 'streaming_frame'):
+            self.streaming_frame = ttk.Frame(self.root, padding=10)
+            self.streaming_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+
+            streaming_title = ttk.Label(
+                self.streaming_frame,
+                text="Processing Image...",
+                font=("Arial", 14, "bold"),
+                foreground=self.colors["primary"]
+            )
+            streaming_title.pack(pady=(10, 5))
+
+            self.streaming_text = scrolledtext.ScrolledText(
+                self.streaming_frame,
+                wrap=tk.WORD,
+                width=70,
+                height=20,
+                font=("Arial", 11),
+                bg="white"
+            )
+            self.streaming_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+            # Apply text tags for styling
+            self.streaming_text.tag_configure("section_title", font=("Arial", 12, "bold"), foreground=self.colors["primary"])
+            self.streaming_text.tag_configure("section_content", font=("Arial", 11))
+
+            self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
 
     def update_streaming_display(self, text):
         """Update the streaming display with the latest formatted text by appending."""
+        if not hasattr(self, 'streaming_text'):
+            return  # Ensure the streaming display exists
+
         self.streaming_text.config(state=tk.NORMAL)  # Allow editing
 
         # Apply formatting and styling to the new text
@@ -1096,10 +1101,13 @@ class ScreenshotApp:
 
         # Update the UI immediately
         self.root.update_idletasks()
+
     def remove_streaming_display(self):
-        """Remove the streaming display from the UI"""
-        if hasattr(self, 'streaming_frame'):
-            self.streaming_frame.place_forget()
+        """Clear the streaming display from the main layout"""
+        if hasattr(self, 'streaming_text'):
+            self.streaming_text.config(state=tk.NORMAL)
+            self.streaming_text.delete(1.0, tk.END)
+            self.streaming_text.config(state=tk.DISABLED)
 
 if __name__ == "__main__":
     root = tk.Tk()
