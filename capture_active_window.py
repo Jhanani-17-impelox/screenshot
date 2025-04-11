@@ -1225,9 +1225,9 @@ class ScreenshotApp:
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
-            # Ensure streaming display is created fresh for each API call
-            self.root.after(0, self.create_streaming_display)
-            self.root.update_idletasks()
+            # # Ensure streaming display is created fresh for each API call
+            # self.root.after(0, self.create_streaming_display)
+            # self.root.update_idletasks()
 
             # Make the API request with stream=True
             response = requests.post(url, json=payload, headers=headers, stream=True)
@@ -1242,9 +1242,9 @@ class ScreenshotApp:
                     buffer += chunk
                     
                     try:
-                        # Update the display with the markdown text
-                        self.root.after(0, lambda: self.update_streaming_display(buffer))
-                        self.root.update_idletasks()
+                        # # Update the display with the markdown text
+                        # self.root.after(0, lambda: self.update_streaming_display(buffer))
+                        # self.root.update_idletasks()
                         
                         # Store the full text for parsing later
                         full_response = buffer
