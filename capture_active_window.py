@@ -34,71 +34,244 @@ logger = logging.getLogger(__name__)
 import webbrowser
 from tkhtmlview import HTMLLabel, HTMLScrolledText, RenderHTML
 
-class HTMLDisplay:
-    """A class to handle HTML rendering in the Tkinter app"""
-    def __init__(self, parent, html_content, width=800, height=None, padx=10, pady=10):
-        self.parent = parent
-        
-        # Process the HTML content to ensure tables render properly
-        self.html_content = self._process_html(html_content)
-        
-        # Create the HTML display widget
-        self.html_widget = HTMLScrolledText(
-            parent, 
-            html=self.html_content,
-            width=width,
-            height=height,
-            padx=padx,
-            pady=pady
-        )
-        
-        # Configure styling and disable editing
-        self.html_widget.configure(
-            font=("Arial", 10),
-            cursor="arrow",
-            background="#ffffff",
-            state="disabled"  # Make the widget uneditable
-        )
-        
-    def pack(self, **kwargs):
-        """Pack the HTML widget with the specified options"""
-        self.html_widget.pack(**kwargs)
-        
-    def update_html(self, new_html):
-        """Update the HTML content"""
-        self.html_content = self._process_html(new_html)
-        self.html_widget.set_html(self.html_content)
-        self.html_widget.configure(state="disabled")  # Ensure it remains uneditable
 
-    def _process_html(self, html_content):
-        """Process HTML to ensure tables render properly without showing style tags"""
-        # Wrap the HTML in a proper HTML document structure if it's not already
-        if not html_content.strip().startswith("<html>"):
-            html_content = f"""
-            <html>
-            <head>
-            <style>
-                /* Table styling */
-                table {{ border-collapse: collapse; width: auto; margin: 10px 0; }}
-                th, td {{ border: 1px solid #000000; padding: 10px; text-align: left; }}
-                th {{ font-weight: bold; color: #1a237e; background-color: #ffffff; }}
-                td {{ background-color: #ffffff; }}
-                
-                /* Content styling */
-                .section {{ margin-bottom: 15px; padding: 0; }}
-                h3 {{ color: #4a6baf; margin: 10px 0 5px 0; padding: 0; font-size: 14px; border-bottom: 1px solid #e1e5eb; }}
-                p {{ margin: 5px 0; line-height: 1.4; text-align: justify; }}
-                .issue {{ color: #cc0000; }}
-                .highlight {{ background-color: #fff3cd; padding: 2px; }}
-            </style>
-            </head>
-            <body>
-            {html_content}
-            </body>
-            </html>
-            """
-        return html_content
+class DisplayTextManager:
+    """Manages the display text storage and updates for streaming responses"""
+    def __init__(self):
+        self.display_texts = []  # List of screenshot text entries
+        self.current_index = 0   # Index of the current text being updated
     
+    def insert_text(self, screenshot, text=""):
+        """Insert a new text entry for a screenshot"""
+        self.display_texts.insert(0, {
+            "screenshot": screenshot,
+            "text": text
+        })
+        self.current_index = 0
+        return 0  # Return the index of the new entry
+    
+    def update_text(self, index, text, is_new_text=False):
+        """Update the text at the specified index"""
+        if index < 0 or index >= len(self.display_texts):
+            return False
+            
+        if is_new_text:
+            self.display_texts[index]["text"] = text
+        else:
+            self.display_texts[index]["text"] += text
+        
+        return True
+    
+    def get_text(self, index):
+        """Get the text at the specified index"""
+        if index < 0 or index >= len(self.display_texts):
+            return None
+        return self.display_texts[index]["text"]
+    
+    def get_screenshot(self, index):
+        """Get the screenshot at the specified index"""
+        if index < 0 or index >= len(self.display_texts):
+            return None
+        return self.display_texts[index]["screenshot"]
+    
+    def clear(self):
+        """Clear all display texts"""
+        self.display_texts = []
+        self.current_index = 0
+
+def parse_engine_issue(markdown_text):
+    """Parse the markdown text to identify engine issues"""
+    # Check for engine issue pattern
+    engine_issue_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', 
+                                  markdown_text, re.DOTALL)
+    
+    if engine_issue_match:
+        # Engine issue found
+        engine_text = engine_issue_match.group(1).strip()
+        return True, engine_text
+    
+    return False, None
+
+def animate_analyzing_label(label):
+    """Animate the analyzing label with moving dots"""
+    current_text = label.cget("text").rstrip('.')
+    dot_count = (label.cget("text").count('.') + 1) % 4
+    label.config(text=f"{current_text}{'.' * dot_count}")
+    
+    # Return True to keep the animation running
+    return True
+
+def update_streaming_layout(parent, text_manager, index):
+    """Update the entire streaming layout with the latest text"""
+    # Get the current text
+    current_text = text_manager.get_text(index)
+    
+    # Update the markdown display
+    if hasattr(parent, 'markdown_text'):
+        parent.markdown_text.config(state=tk.NORMAL)
+        parent.markdown_text.delete(1.0, tk.END)
+        
+        # Process the text with enhanced markdown formatting
+        has_engine_issue, engine_text = parse_engine_issue(current_text)
+        
+        if has_engine_issue:
+            # Split by the engine issue marker
+            parts = current_text.split("<<<**Engine Description:**>>>")
+            
+            # Insert the first part normally
+            parent.markdown_text.insert_markdown(parts[0])
+            
+            # Insert the engine issue marker in red
+            parent.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
+            
+            # Find where the next section begins
+            next_section = re.search(r'\n\n\*\*', parts[1])
+            
+            if next_section:
+                # Insert engine details in red
+                engine_details = parts[1][:next_section.start()]
+                parent.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
+                
+                # Insert the rest of the text normally
+                remaining_text = parts[1][next_section.start():]
+                parent.markdown_text.insert_markdown(remaining_text)
+            else:
+                # Just insert the engine part in red
+                parent.markdown_text.insert(tk.END, parts[1].strip(), "engine_issue")
+        else:
+            # No engine issue, just insert the whole text
+            parent.markdown_text.insert_markdown(current_text)
+        
+        parent.markdown_text.config(state=tk.DISABLED)
+class MarkdownText(tk.Text):
+    """A Text widget with improved Markdown rendering capabilities"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Configure text tags for styling
+        self.tag_configure("bold", font=("Arial", 12, "bold"))
+        self.tag_configure("italic", font=("Arial", 11, "italic"))
+        self.tag_configure("regular", font=("Arial", 11))
+        self.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+        self.tag_configure("section_title", font=("Arial", 12, "bold"), foreground="#4a6baf")
+        self.tag_configure("subsection", font=("Arial", 11, "bold"), foreground="#7986cb")
+        self.tag_configure("code", background="#f0f0f0", font=("Courier", 10), wrap="none")
+        self.tag_configure("bullet", lmargin1=20, lmargin2=30)
+        
+        # Disable scrollbar by default for streaming display
+        self.config(yscrollcommand=None)
+    
+    def insert_markdown(self, text):
+        """Parse and insert markdown text with custom format handling"""
+        # Clear content if requested
+        if not text:
+            return
+            
+        # Process the text by lines for easier section handling
+        lines = text.split('\n')
+        i = 0
+        in_code_block = False
+        current_section = None
+        
+        while i < len(lines):
+            line = lines[i]
+            
+            # Handle code blocks with triple backticks
+            if line.strip().startswith('```'):
+                in_code_block = not in_code_block
+                if in_code_block:
+                    # Start of code block
+                    code_block_content = []
+                    i += 1
+                    while i < len(lines) and not lines[i].strip().startswith('```'):
+                        code_block_content.append(lines[i])
+                        i += 1
+                    # Insert the code block
+                    self.insert(tk.END, '\n'.join(code_block_content) + '\n', "code")
+                i += 1
+                continue
+                
+            # Skip empty lines but preserve spacing
+            if not line.strip():
+                self.insert(tk.END, '\n')
+                i += 1
+                continue
+                
+            # Handle section headers (bold with **)
+            bold_section_match = re.match(r'\*\*(.*?):\*\*', line.strip())
+            engine_issue_match = re.match(r'<<<\*\*(.*?):\*\*>>>', line.strip())
+                
+            if engine_issue_match:
+                # Special handling for engine issue section
+                current_section = "engine_issue"
+                section_title = engine_issue_match.group(1)
+                self.insert(tk.END, f"Engine Issue Detected: ", "engine_issue")
+                i += 1
+                continue
+            elif bold_section_match:
+                # Regular section header
+                current_section = "regular"
+                section_title = bold_section_match.group(1)
+                self.insert(tk.END, section_title, "section_title")
+                self.insert(tk.END, ":\n")
+                i += 1
+                continue
+                
+            # Handle bullet points
+            if line.strip().startswith('- ') or line.strip().startswith('* '):
+                bullet_text = line.strip()[2:]
+                self.insert(tk.END, "• " + bullet_text + "\n", "bullet")
+                i += 1
+                continue
+                
+            # Handle regular text with inline formatting
+            if current_section == "engine_issue":
+                # Check if this line is part of engine issue section
+                if i+1 < len(lines) and (
+                    re.match(r'\*\*(.*?):\*\*', lines[i+1].strip()) or 
+                    re.match(r'<<<\*\*(.*?):\*\*>>>', lines[i+1].strip())):
+                    # Next line is a new section, so this is the end of engine issue
+                    current_section = None
+                    self.insert(tk.END, line + "\n", "engine_issue")
+                else:
+                    # Still in engine issue section
+                    self.insert(tk.END, line + "\n", "engine_issue")
+            else:
+                # Regular text
+                self.process_inline_formatting(line)
+                self.insert(tk.END, "\n")
+                
+            i += 1
+
+    def process_inline_formatting(self, line):
+        """Process inline markdown formatting like bold and italic"""
+        # Process the line to handle bold and italic
+        segments = []
+        current_pos = 0
+        
+        # Find all bold text (**text**)
+        bold_pattern = r'\*\*(.*?)\*\*'
+        for match in re.finditer(bold_pattern, line):
+            # Add text before the match
+            if match.start() > current_pos:
+                segments.append(("regular", line[current_pos:match.start()]))
+            
+            # Add the bold text without the ** markers
+            segments.append(("bold", match.group(1)))
+            current_pos = match.end()
+        
+        # Add any remaining text
+        if current_pos < len(line):
+            segments.append(("regular", line[current_pos:]))
+        
+        # If no formatting found, just add the whole line as regular text
+        if not segments:
+            self.insert(tk.END, line, "regular")
+            return
+            
+        # Insert all segments with appropriate tags
+        for tag, text in segments:
+            self.insert(tk.END, text, tag)
 class ScreenshotApp:
     def __init__(self, root):
         logger.info("ScreenshotApp initialized.")
@@ -145,6 +318,9 @@ class ScreenshotApp:
         self.create_floating_button()
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+
+
 
     def configure_styles(self):
         style = ttk.Style()
@@ -376,13 +552,27 @@ class ScreenshotApp:
 ###########this is the next 575 lines of code#####################
     # Add new methods for button press and release specifically
     def button_press(self, event):
-        # Just for the actual button - no drag logic here
-        pass
+        """Handle button press event separately from drag start"""
+        self.drag_started = False
+        self.x = event.x
+        self.y = event.y
 
     def button_release(self, event):
-        # Only capture when the button itself is clicked
-        if not self.is_capturing:
+        """Handle button release to differentiate clicks from drags"""
+        if not self.drag_started and not self.is_capturing:
             self.handle_capture()
+        self.x = None
+        self.y = None
+
+    def handle_capture(self):
+        if self.is_capturing:
+            logger.info("Capture already in progress.")
+            return
+        logger.info("Starting capture process.")
+            
+        capture_thread = threading.Thread(target=self.capture_active_window)
+        capture_thread.daemon = True
+        capture_thread.start()
     
     def create_loader(self, parent):
         """Create a localized loader overlay with a spinning animation centered on the screen"""
@@ -405,28 +595,59 @@ class ScreenshotApp:
         if hasattr(self, "spinner_label"):
             self.spinner_label.config(image=next(self.spinner_cycle))
             self.spinner_label.after(100, self.animate_spinner)
-
     def show_loader(self):
-        """Show the loader centered on the screen"""
-        if not hasattr(self, "loader_frame"):
-            self.create_loader(self.root)  # Use the root window as the parent
-        self.loader_frame.lift()
-        self.loader_frame.place(relx=0.5, rely=0.5, anchor="center", width=60, height=60)
+        """Show a loading animation while waiting for API response"""
+        loader_window = tk.Toplevel(self.root)
+        loader_window.overrideredirect(True)
+        loader_window.attributes('-topmost', True)
+        
+        # Calculate center of screen
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        window_width = 150
+        window_height = 100
+        x_position = (screen_width - window_width) // 2
+        y_position = (screen_height - window_height) // 2
+        
+        loader_window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
+        
+        # Create a frame with a border
+        frame = tk.Frame(loader_window, bg=self.colors["bg_light"], relief="solid", bd=2)
+        frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Add a label
+        label = tk.Label(
+            frame, 
+            text="Analyzing...", 
+            font=("Arial", 12, "bold"),
+            fg=self.colors["primary"],
+            bg=self.colors["bg_light"]
+        )
+        label.pack(pady=(20, 10))
+        
+        # Create a progress bar
+        progress = ttk.Progressbar(
+            frame, 
+            mode="indeterminate", 
+            length=100
+        )
+        progress.pack(pady=10)
+        progress.start(10)
+        
+        # Store references
+        self.loader_window = loader_window
+        self.loader_progress = progress
 
     def hide_loader(self):
-        """Hide the loader"""
-        if hasattr(self, "loader_frame"):
-            self.loader_frame.place_forget()
+        """Hide and destroy the loader window"""
+        if hasattr(self, 'loader_window') and self.loader_window:
+            self.loader_progress.stop()
+            self.loader_window.destroy()
+            self.loader_window = None
+            self.loader_progress = None
 
-    def handle_capture(self):
-        if self.is_capturing:
-            logger.info("Capture already in progress.")
-            return
-        logger.info("Starting capture process.")
-            
-        capture_thread = threading.Thread(target=self.capture_active_window)
-        capture_thread.daemon = True
-        capture_thread.start()
+
+
     
 ##########this is the next 530 lines of code#####################
 
@@ -517,7 +738,7 @@ class ScreenshotApp:
     
     def capture_active_window(self):
         self.is_capturing = True
-        self.show_loader()  # Show loader centered on the screen
+        # self.show_loader()  # Show loader centered on the screen
         logger.info("Loader shown for capture process.")
 
         try:
@@ -535,7 +756,7 @@ class ScreenshotApp:
                 self.button_window.deiconify()
                 self.update_status("No active window detected or captured our own app", "info")
                 self.is_capturing = False
-                self.hide_loader()  # Hide loader on failure
+                # self.hide_loader()  # Hide loader on failure
                 return
             
             # Take high-resolution screenshot
@@ -548,7 +769,7 @@ class ScreenshotApp:
                     self.button_window.deiconify()
                     self.update_status("Invalid window dimensions detected", "error")
                     self.is_capturing = False
-                    self.hide_loader()  # Hide loader on failure
+                    # self.hide_loader()  # Hide loader on failure
                     return
                 
                 screenshot = pyautogui.screenshot(region=(x, y, width, height))
@@ -690,7 +911,7 @@ class ScreenshotApp:
         
         finally:
             self.is_capturing = False
-            self.hide_loader()  # Hide loader when capture is complete
+            # self.hide_loader()  # Hide loader when capture is complete
 
     
     def compress_image(self, image, quality=60, max_size=1024):
@@ -749,8 +970,8 @@ class ScreenshotApp:
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        # Create a text widget for formatted display
-        text_display = tk.Text(
+        # Create a MarkdownText widget for better formatted display
+        markdown_display = MarkdownText(
             frame,
             wrap=tk.WORD,
             width=70,
@@ -760,40 +981,62 @@ class ScreenshotApp:
             padx=10,
             pady=10
         )
-        text_display.pack(fill=tk.BOTH, expand=True)
+        markdown_display.pack(fill=tk.BOTH, expand=True)
         
-        # Configure text tags for styling
-        text_display.tag_configure("bold", font=("Arial", 12, "bold"))
-        text_display.tag_configure("regular", font=("Arial", 11))
-        text_display.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+        # Build the markdown content
+        markdown_content = ""
         
         # Inspector Notes Section
         if inspector_notes and inspector_notes.strip():
-            text_display.insert(tk.END, "Inspector Notes", "bold")
-            text_display.insert(tk.END, ":\n")
-            text_display.insert(tk.END, inspector_notes.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
-            text_display.insert(tk.END, "\n\n")
+            markdown_content += "**Inspector Notes:**\n" + inspector_notes.strip() + "\n\n"
 
         # Engine Details Section (with red highlighting if engine issue)
-        if engine_details and engine_details.strip() and engine_details.lower() != "null":
+        if engine_details and engine_details.strip():
             if has_engine_issue:
-                text_display.insert(tk.END, "<<<Engine Issue>>>", "engine_issue")
+                # We'll handle special styling for this section separately
+                markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
             else:
-                text_display.insert(tk.END, "Engine Details", "bold")
-            
-            text_display.insert(tk.END, ":\n")
-            text_display.insert(tk.END, engine_details.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
-            text_display.insert(tk.END, "\n\n")
+                markdown_content += "**Engine Details:**\n" + engine_details.strip() + "\n\n"
 
         # Fault/Accident Details Section
         if fault_accident and fault_accident.strip():
-            text_display.insert(tk.END, "Fault/Accident Details", "bold")
-            text_display.insert(tk.END, ":\n")
-            text_display.insert(tk.END, fault_accident.replace("\n", "\n").replace(")", ")\n").strip(), "regular")
-            text_display.insert(tk.END, "\n\n")
+            markdown_content += "**Faults, Precautions, or Accident Information:**\n" + fault_accident.strip() + "\n\n"
         
-        # Make the text widget read-only
-        text_display.config(state=tk.DISABLED)
+        # Update the markdown display with our content
+        markdown_display.config(state=tk.NORMAL)
+        
+        # Check for engine issue to apply special formatting
+        if has_engine_issue and engine_details:
+            # Process markdown with special handling for engine issue
+            parts = markdown_content.split("<<<**Engine Description:**>>>")
+            
+            # Insert the first part normally
+            markdown_display.insert_markdown(parts[0])
+            
+            # Insert the engine issue marker in red
+            markdown_display.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
+            
+            # Find where the next section begins
+            engine_text = parts[1]
+            next_section = re.search(r'\n\n\*\*', engine_text)
+            
+            if next_section:
+                # Insert engine details in red
+                engine_details = engine_text[:next_section.start()]
+                markdown_display.insert(tk.END, engine_details.strip(), "engine_issue")
+                
+                # Insert the rest of the text normally
+                remaining_text = engine_text[next_section.start():]
+                markdown_display.insert_markdown(remaining_text)
+            else:
+                # Just insert the engine part in red
+                markdown_display.insert(tk.END, engine_text.strip(), "engine_issue")
+        else:
+            # No engine issue, just insert the whole text
+            markdown_display.insert_markdown(markdown_content)
+        
+        # Make it read-only
+        markdown_display.config(state=tk.DISABLED)
 
         # Render the screenshot below the information
         img = screenshot_data.get("image")
@@ -829,7 +1072,6 @@ class ScreenshotApp:
         open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
-
         
     def strip_html_tags(self, html_text):
         """Remove HTML tags from text"""
@@ -949,17 +1191,18 @@ class ScreenshotApp:
         """
         import time
         import random
-        import json
         
         if is_mock:
-            # For mock response, we already have the full dictionary
-            formatted_data = response_data
+            # For mock response, we already have the markdown text
+            full_formatted_text = response_data
         else:
-            # For real API response, we need to parse the JSON
-            formatted_data = json.loads(json.loads(response_data).get("assistant_message"))
-        
-        # Format the data into the new required structure
-        full_formatted_text = self.format_api_response_new(formatted_data)
+            # For real API response, extract the formatted text
+            # This assumes your API now returns markdown text directly
+            try:
+                parsed_data = json.loads(response_data)
+                full_formatted_text = parsed_data.get("assistant_message", "")
+            except json.JSONDecodeError:
+                full_formatted_text = response_data
         
         # Now simulate streaming for both real and mock data
         display_text = ""
@@ -972,19 +1215,27 @@ class ScreenshotApp:
             yield display_text
             
             # Simulate typing/streaming delay
-            time.sleep(random.uniform(0.01, 0.05))
+            time.sleep(random.uniform(0.01, 0.03))
 
     def make_api_call(self, payload):
-        self.show_loader()  # Show loader centered on the screen
+        # self.show_loader()  # Show loader centered on the screen
         
         try:
             # MOCK IMPLEMENTATION - Comment this section to use the real API
-            mock_response = {
-                "engine_details": "Engine has water damage and rust on components.",  # Changed to include an issue
-                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-                "has_engine_issue": True,  # Set to True to test engine issue highlighting
-                "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
-            }
+            mock_response = """**Inspector Notes:**
+    シートシミ (Mancha en el asiento)
+    ホコリ、ウスア (Polvo, desgaste ligero)
+    ホイールキズ (Arañazos en las ruedas)
+
+    <<<**Engine Description:**>>>
+    Engine has water damage and rust on components.
+
+    **Faults, Precautions, or Accident Information:**
+    FW キズ・無石・ヒビ割・リペア跡・×要 (FW: Arañazos, sin piedras, grietas, marcas de reparación, requiere revisión)
+    A1 (A1)
+    A2 (A2)
+    U1 (U1)
+    U2 (U2)"""
             
             # Create and show the streaming display
             self.create_streaming_display()
@@ -993,7 +1244,9 @@ class ScreenshotApp:
             for text_so_far in self.stream_api_response(mock_response, is_mock=True):
                 self.update_streaming_display(text_so_far)
             
-            return mock_response
+            # Parse the mock response to extract structured data for storage
+            structured_response = self.parse_markdown_response(mock_response)
+            return structured_response
             
             # REAL API IMPLEMENTATION - Uncomment this section and comment out the mock section above
             """
@@ -1023,7 +1276,7 @@ class ScreenshotApp:
 
             # Process the streaming response
             buffer = ""
-            full_response = None
+            full_response = ""
 
             # Stream the response as it comes in
             for chunk in response.iter_content(chunk_size=1024):
@@ -1038,16 +1291,13 @@ class ScreenshotApp:
                         
                         # Extract the assistant_message if available
                         if "assistant_message" in parsed_data:
-                            message_data = json.loads(parsed_data["assistant_message"])
+                            message_text = parsed_data["assistant_message"]
                             
-                            # Format the response data for streaming display
-                            formatted_text = self.format_api_response_new(message_data)
+                            # Update the display with the markdown text
+                            self.update_streaming_display(message_text)
                             
-                            # Update the display with formatted text
-                            self.update_streaming_display(formatted_text)
-                            
-                            # Store the full parsed data for return
-                            full_response = message_data
+                            # Store the full text for parsing later
+                            full_response = message_text
                         
                         # Clear the buffer since we successfully parsed it
                         buffer = ""
@@ -1057,8 +1307,9 @@ class ScreenshotApp:
                         # Just continue accumulating more chunks
                         pass
 
-            # Return the final parsed response
-            return full_response
+            # Parse the final response to extract structured data
+            structured_response = self.parse_markdown_response(full_response)
+            return structured_response
             """
         
         except Exception as e:
@@ -1067,48 +1318,49 @@ class ScreenshotApp:
             return None
         
         finally:
-            self.hide_loader()  # Hide loader when API call is complete
+            # self.hide_loader()  # Hide loader when API call is complete
             # Add a small delay before removing the streaming display to let the user see the final result
-            self.root.after(2000, self.remove_streaming_display)
+            self.root.after(3000, self.remove_streaming_display)
 
 
-    def format_api_response_new(self, data):
-        """Format the API response data into the new required format:
-        inspector notes <<<engine issue>>> fault tolerance
-        """
-        # Get the components
-        inspector_notes = data.get("inspector_notes", "").strip()
-        engine_details = data.get("engine_details", "").strip()
-        fault_accident = data.get("fault_accident", "").strip()
-        has_engine_issue = data.get("has_engine_issue", False)
+
+    def parse_markdown_response(self, markdown_text):
+        """Parse the markdown response into structured data for storage"""
+        structured_data = {
+            "inspector_notes": "",
+            "engine_details": "",
+            "fault_accident": "",
+            "has_engine_issue": False
+        }
         
-        # Construct the response string
-        response_parts = []
+        # Find inspector notes section
+        inspector_match = re.search(r'\*\*Inspector Notes:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+        if inspector_match:
+            structured_data["inspector_notes"] = inspector_match.group(1).strip()
         
-        # Add inspector notes
-        if inspector_notes:
-            response_parts.append(f"**Inspector Notes:**\n{inspector_notes}")
+        # Check for engine issue
+        engine_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+        if engine_match:
+            structured_data["engine_details"] = engine_match.group(1).strip()
+            structured_data["has_engine_issue"] = True
         
-        # Add engine issue if it exists
-        if has_engine_issue and engine_details and engine_details.lower() != "null":
-            response_parts.append(f"**<<<Engine Issue>>>:**\n{engine_details}")
+        # Find fault/accident section
+        fault_match = re.search(r'\*\*Faults, Precautions, or Accident Information:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+        if fault_match:
+            structured_data["fault_accident"] = fault_match.group(1).strip()
         
-        # Add fault/accident details
-        if fault_accident:
-            response_parts.append(f"**Fault/Accident Details:**\n{fault_accident}")
-        
-        # Join all sections with two newlines
-        return "\n\n".join(response_parts)
+        return structured_data
+
 
     def create_streaming_display(self):
-        """Create a Text widget to display streaming API response using markdown"""
-        if not hasattr(self, 'streaming_text'):
+        """Create a MarkdownText widget to display streaming API response"""
+        if not hasattr(self, 'markdown_text'):
             # Create a frame for the streaming display
             self.streaming_frame = ttk.Frame(self.screenshots_container)
             self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
             
-            # Add a Text widget with markdown support
-            self.streaming_text = tk.Text(
+            # Add a custom MarkdownText widget for better formatting
+            self.markdown_text = MarkdownText(
                 self.streaming_frame,
                 wrap=tk.WORD,
                 width=70,
@@ -1118,64 +1370,84 @@ class ScreenshotApp:
                 padx=10,
                 pady=10
             )
-            self.streaming_text.pack(fill=tk.BOTH, expand=True)
+            self.markdown_text.pack(fill=tk.BOTH, expand=True)
             
-            # Disable scrolling by not including a scrollbar
+            # Additional tag for engine issue
+            self.markdown_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
             
-            # Configure text tags for styling
-            self.streaming_text.tag_configure("bold", font=("Arial", 12, "bold"))
-            self.streaming_text.tag_configure("regular", font=("Arial", 11))
-            self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+            # Disable editing
+            self.markdown_text.config(state=tk.DISABLED)
             
-            self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
+            # Create a label for the animation
+            self.analyzing_label = ttk.Label(
+                self.streaming_frame,
+                text="Analyzing screenshot...",
+                font=("Arial", 10, "italic"),
+                foreground=self.colors["primary"]
+            )
+            self.analyzing_label.pack(pady=(0, 5))
+
+
+
 
     def update_streaming_display(self, text):
-        """Update the main UI with markdown formatted text"""
-        if not hasattr(self, 'streaming_text'):
+        """Update the MarkdownText widget with the latest markdown content"""
+        if not hasattr(self, 'markdown_text'):
             self.create_streaming_display()
-            
-        self.streaming_text.config(state=tk.NORMAL)  # Allow editing
-        self.streaming_text.delete(1.0, tk.END)  # Clear existing text
         
-        # Split the text into lines to process markdown
-        lines = text.split('\n')
-        i = 0
-        while i < len(lines):
-            line = lines[i]
+        # Enable editing
+        self.markdown_text.config(state=tk.NORMAL)
+        
+        # Clear existing text
+        self.markdown_text.delete(1.0, tk.END)
+        
+        # Check for engine issue pattern
+        has_engine_issue = "<<<**Engine Description:**>>>" in text
+        
+        # Process the text to highlight engine issues in red
+        if has_engine_issue:
+            # Split by the engine issue marker
+            parts = text.split("<<<**Engine Description:**>>>")
             
-            # Handle bold text (section titles)
-            if line.startswith('**') and line.endswith(':**'):
-                title = line.strip('*:')
+            # Insert the first part normally
+            self.markdown_text.insert_markdown(parts[0])
+            
+            # Insert the engine issue marker in red
+            self.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
+            
+            # Find where the next section begins
+            engine_text = parts[1]
+            next_section = re.search(r'\n\n\*\*', engine_text)
+            
+            if next_section:
+                # Insert engine details in red
+                engine_details = engine_text[:next_section.start()]
+                self.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
                 
-                # Check if this is an engine issue section
-                if "<<<Engine Issue>>>" in title:
-                    self.streaming_text.insert(tk.END, title, "engine_issue")
-                else:
-                    self.streaming_text.insert(tk.END, title, "bold")
-                    
-                self.streaming_text.insert(tk.END, ":\n")
-                i += 1
-                
-                # Add content until next section or end
-                content = []
-                while i < len(lines) and not (lines[i].startswith('**') and lines[i].endswith(':**')):
-                    content.append(lines[i])
-                    i += 1
-                    
-                self.streaming_text.insert(tk.END, "\n".join(content), "regular")
-                self.streaming_text.insert(tk.END, "\n\n")
+                # Insert the rest of the text normally
+                remaining_text = engine_text[next_section.start():]
+                self.markdown_text.insert_markdown(remaining_text)
             else:
-                # Regular text
-                self.streaming_text.insert(tk.END, line, "regular")
-                self.streaming_text.insert(tk.END, "\n")
-                i += 1
+                # Just insert the engine part in red
+                self.markdown_text.insert(tk.END, engine_text.strip(), "engine_issue")
+        else:
+            # No engine issue, just insert the whole text
+            self.markdown_text.insert_markdown(text)
         
-        self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
+        # Disable editing again
+        self.markdown_text.config(state=tk.DISABLED)
+        
+        # Update the animation text
+        dots = "." * (int(time.time() * 2) % 4)
+        self.analyzing_label.config(text=f"Analyzing screenshot{dots}")
 
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
         if hasattr(self, 'streaming_frame'):
-            self.streaming_frame.place_forget()
+            self.streaming_frame.destroy()
+            delattr(self, 'streaming_frame')
+            delattr(self, 'markdown_text')
+            delattr(self, 'analyzing_label')
 
 if __name__ == "__main__":
     root = tk.Tk()
