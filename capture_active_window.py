@@ -1082,11 +1082,22 @@ class ScreenshotApp:
             self.root.after(2000, self.remove_streaming_display)
 
     def create_streaming_display(self):
-        """Create a UI element in the main UI to display streaming API response"""
-        if not hasattr(self, 'streaming_text'):
-            # Add a ScrolledText widget to the main UI if it doesn't exist
+        """Create a UI element to display streaming API response in the main layout"""
+        # Add a frame for the streaming response in the main layout
+        if not hasattr(self, 'streaming_frame'):
+            self.streaming_frame = ttk.Frame(self.root, padding=10)
+            self.streaming_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+
+            streaming_title = ttk.Label(
+                self.streaming_frame,
+                text="Processing Image...",
+                font=("Arial", 14, "bold"),
+                foreground=self.colors["primary"]
+            )
+            streaming_title.pack(pady=(10, 5))
+
             self.streaming_text = scrolledtext.ScrolledText(
-                self.screenshots_container,  # Place it in the main UI
+                self.streaming_frame,
                 wrap=tk.WORD,
                 width=70,
                 height=20,
@@ -1102,10 +1113,11 @@ class ScreenshotApp:
             self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
 
     def update_streaming_display(self, text):
-        """Update the main UI with the latest formatted text"""
-        if hasattr(self, 'streaming_text'):
-            self.streaming_text.config(state=tk.NORMAL)  # Allow editing
-            self.streaming_text.delete(1.0, tk.END)  # Clear existing text
+        """Update the streaming display with the latest formatted text by appending."""
+        if not hasattr(self, 'streaming_text'):
+            return  # Ensure the streaming display exists
+
+        self.streaming_text.config(state=tk.NORMAL)  # Allow editing
 
             # Apply formatting and styling to the text
             sections = text.split("\n\n")
@@ -1129,10 +1141,15 @@ class ScreenshotApp:
             self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
             self.streaming_text.see(tk.END)  # Scroll to the end
 
+        # Update the UI immediately
+        self.root.update_idletasks()
+
     def remove_streaming_display(self):
-        """Remove the streaming display from the UI"""
-        if hasattr(self, 'streaming_frame'):
-            self.streaming_frame.place_forget()
+        """Clear the streaming display from the main layout"""
+        if hasattr(self, 'streaming_text'):
+            self.streaming_text.config(state=tk.NORMAL)
+            self.streaming_text.delete(1.0, tk.END)
+            self.streaming_text.config(state=tk.DISABLED)
 
 if __name__ == "__main__":
     root = tk.Tk()
