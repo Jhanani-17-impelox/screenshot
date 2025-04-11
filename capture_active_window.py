@@ -875,9 +875,9 @@ class ScreenshotApp:
             
             # Comment out the API call and use mock response
             result = self.make_api_call(payload_json)
-            print(result)
-            if type(result) == str or result==None:
-                self.update_status("Server Error: Please try again later", "error")
+            print(type(result))
+            if  result==None:
+               
                 return
             else:
                 self.save_payload_to_file(payload_json)
@@ -1218,110 +1218,53 @@ class ScreenshotApp:
             time.sleep(random.uniform(0.01, 0.03))
 
     def make_api_call(self, payload):
-        # self.show_loader()  # Show loader centered on the screen
-        
         try:
-            # MOCK IMPLEMENTATION - Comment this section to use the real API
-            mock_response = """**Inspector Notes:**
-    シートシミ (Mancha en el asiento)
-    ホコリ、ウスア (Polvo, desgaste ligero)
-    ホイールキズ (Arañazos en las ruedas)
-
-    <<<**Engine Description:**>>>
-    Engine has water damage and rust on components.
-
-    **Faults, Precautions, or Accident Information:**
-    FW キズ・無石・ヒビ割・リペア跡・×要 (FW: Arañazos, sin piedras, grietas, marcas de reparación, requiere revisión)
-    A1 (A1)
-    A2 (A2)
-    U1 (U1)
-    U2 (U2)"""
-            
-            # Create and show the streaming display
-            self.create_streaming_display()
-            
-            # Process the mock response stream
-            for text_so_far in self.stream_api_response(mock_response, is_mock=True):
-                self.update_streaming_display(text_so_far)
-            
-            # Parse the mock response to extract structured data for storage
-            structured_response = self.parse_markdown_response(mock_response)
-            return structured_response
-            
-            # REAL API IMPLEMENTATION - Uncomment this section and comment out the mock section above
-            """
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
-            # Create and show the streaming display before making the API call
-            self.create_streaming_display()
+            # Ensure streaming display is created fresh for each API call
+            self.root.after(0, self.create_streaming_display)
+            self.root.update_idletasks()
 
-            # Make the API request with stream=True to get chunks as they arrive
+            # Make the API request with stream=True
             response = requests.post(url, json=payload, headers=headers, stream=True)
             response.raise_for_status()
 
-            if response.status_code != 201:
-                if response.status_code == 401:
-                    self.update_status("Unauthorized User: it seems you don't have permission, contact your admin", "error")
-                    return None
-                elif response.status_code == 500:
-                    self.update_status("Server Error: Please try again later", "error")
-                    return None
-                else:
-                    self.update_status("Unexpected Error: Please try again", "error")
-                    return None
-
-            # Process the streaming response
             buffer = ""
             full_response = ""
 
             # Stream the response as it comes in
-            for chunk in response.iter_content(chunk_size=1024):
+            for chunk in response.iter_content(chunk_size=10, decode_unicode=True):
                 if chunk:
-                    # Decode the chunk and add it to our buffer
-                    chunk_text = chunk.decode('utf-8')
-                    buffer += chunk_text
+                    buffer += chunk
                     
                     try:
-                        # Try to parse the buffer as JSON
-                        parsed_data = json.loads(buffer)
+                        # Update the display with the markdown text
+                        self.root.after(0, lambda: self.update_streaming_display(buffer))
+                        self.root.update_idletasks()
                         
-                        # Extract the assistant_message if available
-                        if "assistant_message" in parsed_data:
-                            message_text = parsed_data["assistant_message"]
-                            
-                            # Update the display with the markdown text
-                            self.update_streaming_display(message_text)
-                            
-                            # Store the full text for parsing later
-                            full_response = message_text
+                        # Store the full text for parsing later
+                        full_response = buffer
                         
-                        # Clear the buffer since we successfully parsed it
-                        buffer = ""
-                        
-                    except json.JSONDecodeError:
-                        # If we can't parse the JSON yet, it might be incomplete
-                        # Just continue accumulating more chunks
-                        pass
+                    except Exception as e:
+                        logging.error(f"Error updating display: {str(e)}")
+                        continue
 
             # Parse the final response to extract structured data
             structured_response = self.parse_markdown_response(full_response)
             return structured_response
-            """
-        
+
         except Exception as e:
             logging.error(f"Error in API call: {str(e)}")
             self.update_status(f"API Error: {str(e)}", "error")
             return None
         
         finally:
-            # self.hide_loader()  # Hide loader when API call is complete
-            # Add a small delay before removing the streaming display to let the user see the final result
-            self.root.after(3000, self.remove_streaming_display)
-
+            # Add a delay before removing the streaming display
+            self.root.after(1000, self.remove_streaming_display)
 
 
     def parse_markdown_response(self, markdown_text):
@@ -1354,46 +1297,53 @@ class ScreenshotApp:
 
     def create_streaming_display(self):
         """Create a MarkdownText widget to display streaming API response"""
-        if not hasattr(self, 'markdown_text'):
-            # Create a frame for the streaming display
-            self.streaming_frame = ttk.Frame(self.screenshots_container)
-            self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-            
-            # Add a custom MarkdownText widget for better formatting
-            self.markdown_text = MarkdownText(
-                self.streaming_frame,
-                wrap=tk.WORD,
-                width=70,
-                height=20,
-                font=("Arial", 11),
-                bg="white",
-                padx=10,
-                pady=10
-            )
-            self.markdown_text.pack(fill=tk.BOTH, expand=True)
-            
-            # Additional tag for engine issue
-            self.markdown_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
-            
-            # Disable editing
-            self.markdown_text.config(state=tk.DISABLED)
-            
-            # Create a label for the animation
-            self.analyzing_label = ttk.Label(
-                self.streaming_frame,
-                text="Analyzing screenshot...",
-                font=("Arial", 10, "italic"),
-                foreground=self.colors["primary"]
-            )
-            self.analyzing_label.pack(pady=(0, 5))
+        # First ensure any existing display is properly removed
+        self.remove_streaming_display()
+        
+        # Create new streaming display
+        self.streaming_frame = ttk.Frame(self.screenshots_container)
+        self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        
+        # Add a custom MarkdownText widget for better formatting
+        self.markdown_text = MarkdownText(
+            self.streaming_frame,
+            wrap=tk.WORD,
+            width=70,
+            height=20,
+            font=("Arial", 11),
+            bg="white",
+            padx=10,
+            pady=10
+        )
+        self.markdown_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Additional tag for engine issue
+        self.markdown_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+        
+        # Disable editing
+        self.markdown_text.config(state=tk.DISABLED)
+        
+        # Create a label for the animation
+        self.analyzing_label = ttk.Label(
+            self.streaming_frame,
+            text="Analyzing screenshot...",
+            font=("Arial", 10, "italic"),
+            foreground=self.colors["primary"]
+        )
+        self.analyzing_label.pack(pady=(0, 5))
+
+        # Ensure the new frame is properly drawn
+        self.root.update_idletasks()
 
 
 
 
     def update_streaming_display(self, text):
         """Update the MarkdownText widget with the latest markdown content"""
-        if not hasattr(self, 'markdown_text'):
+        if not hasattr(self, 'streaming_frame'):
+            print("inside if not hasattr")
             self.create_streaming_display()
+        print("outside if not hasattr")
         
         # Enable editing
         self.markdown_text.config(state=tk.NORMAL)
@@ -1444,10 +1394,17 @@ class ScreenshotApp:
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
         if hasattr(self, 'streaming_frame'):
+            print("destroying streaming display")
             self.streaming_frame.destroy()
-            delattr(self, 'streaming_frame')
-            delattr(self, 'markdown_text')
-            delattr(self, 'analyzing_label')
+            # Wait for frame to be destroyed before removing attributes
+            self.root.update_idletasks()
+            # Clear all streaming-related attributes
+            if hasattr(self, 'streaming_frame'):
+                delattr(self, 'streaming_frame')
+            if hasattr(self, 'markdown_text'):
+                delattr(self, 'markdown_text')
+            if hasattr(self, 'analyzing_label'):
+                delattr(self, 'analyzing_label')
 
 if __name__ == "__main__":
     root = tk.Tk()
