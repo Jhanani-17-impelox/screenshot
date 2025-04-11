@@ -547,8 +547,6 @@ class ScreenshotApp:
         y = self.button_window.winfo_y() + deltay
         self.button_window.geometry(f"+{x}+{y}")
 
-
-
 ###########this is the next 575 lines of code#####################
     # Add new methods for button press and release specifically
     def button_press(self, event):
@@ -882,7 +880,18 @@ class ScreenshotApp:
             else:
                 self.save_payload_to_file(payload_json)
             
-                # Add to screenshots list (at the beginning)
+                # # Add to screenshots list (at the beginning)
+                # self.screenshots.insert(0, {
+                #     "image": screenshot,
+                #     "title": window_title,
+                #     "timestamp": datetime.now().strftime("%H:%M:%S"),
+                #     "path": file_path,
+                #     "base64": img_str,
+                #     "payload_json": payload_json,
+                #     "api_response": result
+                # })
+                
+                # In capture_active_window method, modify the screenshots.insert part:
                 self.screenshots.insert(0, {
                     "image": screenshot,
                     "title": window_title,
@@ -890,9 +899,11 @@ class ScreenshotApp:
                     "path": file_path,
                     "base64": img_str,
                     "payload_json": payload_json,
-                    "api_response": result
+                    "api_response": result,
+                    "full_text": result.get("full_text", "")  # Store the full text
                 })
-                
+
+
                 # Clear existing screenshots from UI
                 for widget in self.screenshots_container.winfo_children():
                     widget.destroy()
@@ -956,11 +967,14 @@ class ScreenshotApp:
             foreground=fg_color
         )
 
+
+
     def add_screenshot_to_ui(self, index):
         screenshot_data = self.screenshots[index]
 
         # Extract API response
         api_response = screenshot_data.get("api_response", {})
+        full_text = screenshot_data.get("full_text", "")  # Get the stored full text
         inspector_notes = api_response.get("inspector_notes", None)
         engine_details = api_response.get("engine_details", None)
         fault_accident = api_response.get("fault_accident", None)
@@ -969,6 +983,10 @@ class ScreenshotApp:
         # Create a single frame for all content
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10)
+
+        # Insert the frame at the top of the container
+        self.screenshots_container.update_idletasks()
+        self.canvas.yview_moveto(0)  # Scroll to the top
 
         # Create a MarkdownText widget for better formatted display
         markdown_display = MarkdownText(
@@ -983,30 +1001,28 @@ class ScreenshotApp:
         )
         markdown_display.pack(fill=tk.BOTH, expand=True)
         
-        # Build the markdown content
-        markdown_content = ""
+        # Use the full text content if available, otherwise build it from components
+        markdown_content = full_text if full_text else ""
         
-        # Inspector Notes Section
-        if inspector_notes and inspector_notes.strip():
-            markdown_content += "**Inspector Notes:**\n" + inspector_notes.strip() + "\n\n"
+        if not markdown_content:
+            # Build the markdown content if full_text isn't available
+            if inspector_notes and inspector_notes.strip():
+                markdown_content += "**Inspector Notes:**\n" + inspector_notes.strip() + "\n\n"
 
-        # Engine Details Section (with red highlighting if engine issue)
-        if engine_details and engine_details.strip():
-            if has_engine_issue:
-                # We'll handle special styling for this section separately
-                markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
-            else:
-                markdown_content += "**Engine Details:**\n" + engine_details.strip() + "\n\n"
+            if engine_details and engine_details.strip():
+                if has_engine_issue:
+                    markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
+                else:
+                    markdown_content += "**Engine Details:**\n" + engine_details.strip() + "\n\n"
 
-        # Fault/Accident Details Section
-        if fault_accident and fault_accident.strip():
-            markdown_content += "**Faults, Precautions, or Accident Information:**\n" + fault_accident.strip() + "\n\n"
+            if fault_accident and fault_accident.strip():
+                markdown_content += "**Faults, Precautions, or Accident Information:**\n" + fault_accident.strip() + "\n\n"
         
         # Update the markdown display with our content
         markdown_display.config(state=tk.NORMAL)
         
         # Check for engine issue to apply special formatting
-        if has_engine_issue and engine_details:
+        if has_engine_issue and "<<<**Engine Description:**>>>" in markdown_content:
             # Process markdown with special handling for engine issue
             parts = markdown_content.split("<<<**Engine Description:**>>>")
             
@@ -1218,36 +1234,55 @@ class ScreenshotApp:
             time.sleep(random.uniform(0.01, 0.03))
 
     def make_api_call(self, payload):
-        # self.show_loader()  # Show loader centered on the screen
-        
         try:
-            # MOCK IMPLEMENTATION - Comment this section to use the real API
-            mock_response = """**Inspector Notes:**
-    シートシミ (Mancha en el asiento)
-    ホコリ、ウスア (Polvo, desgaste ligero)
-    ホイールキズ (Arañazos en las ruedas)
+            # MOCK IMPLEMENTATION
+            def generate_mock_response():
+                yield "**Inspector Notes:**"
+                time.sleep(0.5)
+                yield "**シートシミ (Mancha en el asiento)**"
+                time.sleep(0.5)
+                yield "ホコリ、ウスア (Polvo, desgaste ligero)"
+                time.sleep(0.5)
+                yield "ホイールキズ (Arañazos en las ruedas)"
+                time.sleep(0.5)
+                yield "<<<**Engine Description:**>>>"
+                time.sleep(0.5)
+                yield "Engine has water damage and rust on components."
+                time.sleep(0.5)
+                yield "**Faults, Precautions, or Accident Information:**"
+                time.sleep(0.5)
+                yield "Minor scratches on the exterior. Fluid leaks detected."
 
-    <<<**Engine Description:**>>>
-    Engine has water damage and rust on components.
-
-    **Faults, Precautions, or Accident Information:**
-    FW キズ・無石・ヒビ割・リペア跡・×要 (FW: Arañazos, sin piedras, grietas, marcas de reparación, requiere revisión)
-    A1 (A1)
-    A2 (A2)
-    U1 (U1)
-    U2 (U2)"""
-            
-            # Create and show the streaming display
+            # Create the streaming display
             self.create_streaming_display()
+
+            # Store the complete response text as we stream it
+            full_response_text = ""
             
-            # Process the mock response stream
-            for text_so_far in self.stream_api_response(mock_response, is_mock=True):
-                self.update_streaming_display(text_so_far)
-            
+            # Process the mock response stream and update the UI directly
+            mock_response = generate_mock_response()
+            for chunk in mock_response:
+                full_response_text += chunk
+                self.update_streaming_display(full_response_text)  # Pass full text so far
+                time.sleep(0.5)  # Simulate delay for streaming effect
+
             # Parse the mock response to extract structured data for storage
-            structured_response = self.parse_markdown_response(mock_response)
-            return structured_response
+            structured_response = self.parse_markdown_response(full_response_text)
             
+            # Store the full text with the structured response to use in the UI later
+            structured_response["full_text"] = full_response_text
+            
+            return structured_response
+
+        except Exception as e:
+            logging.error(f"Error in API call: {str(e)}")
+            self.update_status(f"API Error: {str(e)}", "error")
+            return None
+
+        finally:
+            # Remove the streaming display after processing
+            # But we've already captured the complete response text
+            self.remove_streaming_display()
             # REAL API IMPLEMENTATION - Uncomment this section and comment out the mock section above
             """
             url = "http://localhost:8001/v1/chat"
@@ -1312,15 +1347,15 @@ class ScreenshotApp:
             return structured_response
             """
         
-        except Exception as e:
-            logging.error(f"Error in API call: {str(e)}")
-            self.update_status(f"API Error: {str(e)}", "error")
-            return None
+        # except Exception as e:
+        #     logging.error(f"Error in API call: {str(e)}")
+        #     self.update_status(f"API Error: {str(e)}", "error")
+        #     return None
         
-        finally:
-            # self.hide_loader()  # Hide loader when API call is complete
-            # Add a small delay before removing the streaming display to let the user see the final result
-            self.root.after(3000, self.remove_streaming_display)
+        # finally:
+        #     # self.hide_loader()  # Hide loader when API call is complete
+        #     # Add a small delay before removing the streaming display to let the user see the final result
+        #     self.root.after(3000, self.remove_streaming_display)
 
 
 
@@ -1399,7 +1434,7 @@ class ScreenshotApp:
         self.markdown_text.config(state=tk.NORMAL)
         
         # Clear existing text
-        self.markdown_text.delete(1.0, tk.END)
+        # self.markdown_text.delete(1.0, tk.END)
         
         # Check for engine issue pattern
         has_engine_issue = "<<<**Engine Description:**>>>" in text
@@ -1449,7 +1484,9 @@ class ScreenshotApp:
             delattr(self, 'markdown_text')
             delattr(self, 'analyzing_label')
 
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = ScreenshotApp(root)
     root.mainloop()
+
