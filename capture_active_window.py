@@ -1003,7 +1003,6 @@ class ScreenshotApp:
         
         try:
             # MOCK IMPLEMENTATION - Comment this section to use the real API
-<<<<<<< HEAD
             mock_response = {
                 "engine_details": "null",
                 "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
@@ -1022,25 +1021,6 @@ class ScreenshotApp:
             
             # REAL API IMPLEMENTATION - Uncomment this section and comment out the mock section above
             """
-=======
-            # mock_response = {
-            #     "engine_details": "null",
-            #     "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-            #     "has_engine_issue": False,
-            #     "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
-            # }
-            
-            # # Create and show the streaming display
-           
-            
-            # # Process the mock response stream
-            # for text_so_far in self.stream_api_response(mock_response, is_mock=True):
-            #     self.update_streaming_display(text_so_far)
-            
-            # return mock_response
-            
-            
->>>>>>> b9016fef9aa22add76abb56228f0a7a735ad839b
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
@@ -1054,7 +1034,6 @@ class ScreenshotApp:
             response = requests.post(url, json=payload, headers=headers, stream=True)
             response.raise_for_status()
 
-<<<<<<< HEAD
             if response.status_code != 201:
                 if response.status_code == 401:
                     self.update_status("Unauthorized User: it seems you don't have permission, contact your admin", "error")
@@ -1108,25 +1087,6 @@ class ScreenshotApp:
             # Return the final parsed response
             return full_response
             """
-=======
-            for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
-                 print("came to for loop")
-                 if chunk:
-                     print(chunk, "---------------- got chunk")
-                     complete_response += chunk
-                     # Directly update the display with the received text chunk
-                     self.update_streaming_display(chunk)
-                 else:
-                     print("no chunk")
- 
-            print(complete_response, "---------------------complete response")
-            return json.loads(complete_response)
-
-            
-
-            #
-            
->>>>>>> b9016fef9aa22add76abb56228f0a7a735ad839b
 
             # Add this helper method to format the API response
             def format_api_response(self, data):
@@ -1193,7 +1153,6 @@ class ScreenshotApp:
                     title = section[:title_end+1]
                     content = section[title_end+1:]
 
-<<<<<<< HEAD
                     # Insert title with styling
                     self.streaming_text.insert(tk.END, title, "section_title")
                     # Insert content with styling
@@ -1206,32 +1165,6 @@ class ScreenshotApp:
 
             self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
             self.streaming_text.see(tk.END)  # Scroll to the end
-=======
-            # Apply formatting and styling to the text
-            sections = text.split("\n\n")
-            for section in sections:
-                if ":" in section:
-                    # Split the section into title and content
-                    title_end = section.find(":")
-                    title = section[:title_end+1]
-                    content = section[title_end+1:]
-
-                    # Insert title with styling
-                    self.streaming_text.insert(tk.END, title, "section_title")
-                    # Insert content with styling
-                    self.streaming_text.insert(tk.END, content, "section_content")
-                    self.streaming_text.insert(tk.END, "\n\n")
-                else:
-                    # If no title is found, just insert the text normally
-                    self.streaming_text.insert(tk.END, section, "section_content")
-                    self.streaming_text.insert(tk.END, "\n\n")
-
-            self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
-            self.streaming_text.see(tk.END)  # Scroll to the end
-
-        # Update the UI immediately
-        self.root.update_idletasks()
->>>>>>> b9016fef9aa22add76abb56228f0a7a735ad839b
 
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
