@@ -654,9 +654,8 @@ class ScreenshotApp:
             
             # Comment out the API call and use mock response
             result = self.make_api_call(payload_json)
-            print(result)
+            print(type(result),"----------------------------------------------------------came to result----------")
             if type(result) == str or result==None:
-                self.update_status("Server Error: Please try again later", "error")
                 return
             else:
                 self.save_payload_to_file(payload_json)
@@ -761,7 +760,7 @@ class ScreenshotApp:
                 frame,
                 text=inspector_notes.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,  # Wrap text to fit within the frame
+                wraplength=2000,  # Wrap text to fit within the frame
                 justify=tk.LEFT
             )
             inspector_text.pack(anchor=tk.W, pady=(0, 10))
@@ -780,7 +779,7 @@ class ScreenshotApp:
                 frame,
                 text=engine_details.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=2000,
                 justify=tk.LEFT
             )
             engine_text.pack(anchor=tk.W, pady=(0, 10))
@@ -799,7 +798,7 @@ class ScreenshotApp:
                 frame,
                 text=fault_accident.replace("\n", "\n").replace(")", ")\n").strip(),  # Add new line after )
                 font=("Arial", 10),
-                wraplength=600,
+                wraplength=2000,
                 justify=tk.LEFT
             )
             fault_text.pack(anchor=tk.W, pady=(0, 10))
@@ -998,73 +997,47 @@ class ScreenshotApp:
             time.sleep(random.uniform(0.01, 0.05))
 
     def make_api_call(self, payload):
-        self.show_loader()  # Show loader centered on the screen
-        
+        self.show_loader()
+        complete_response = ""
+
         try:
-            # MOCK IMPLEMENTATION - Comment this section to use the real API
-            mock_response = {
-                "engine_details": "null",
-                "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
-                "has_engine_issue": False,
-                "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
-            }
-            
-            # Create and show the streaming display
-            self.create_streaming_display()
-            
-            # Process the mock response stream
-            for text_so_far in self.stream_api_response(mock_response, is_mock=True):
-                self.update_streaming_display(text_so_far)
-            
-            return mock_response
-            
-            # REAL API IMPLEMENTATION - Uncomment this section and comment out the mock section above
-            """
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
-            
-            # Make the API request
-            response = requests.post(url, json=payload, headers=headers)
+
+            response = requests.post(url, json=payload, headers=headers, stream=True)
             response.raise_for_status()
-            
-            if response.status_code != 201:
-                if response.status_code == 401:
-                    self.update_status("Unauthorized User: it seems you don't have permission, contact your admin", "error")
-                    return None
-                elif response.status_code == 500:
-                    self.update_status("Server Error: Please try again later", "error")
-                    return None
-                else:
-                    self.update_status("Unexpected Error: Please try again", "error")
-                    return None
-            
-            # Get the response as text
-            response_text = response.text
-            
-            # Create and show the streaming display
+
+            print(response, "-------------------- api response")
             self.create_streaming_display()
-            
-            # Process the API response stream
-            for text_so_far in self.stream_api_response(response_text):
-                self.update_streaming_display(text_so_far)
-            
-            # Return the parsed response
-            return json.loads(json.loads(response_text).get("assistant_message"))
-            """
-        
-        except Exception as e:
+            for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
+                print("came to for loop")
+                if chunk:
+                    print(chunk, "---------------- got chunk")
+                    complete_response += chunk
+                    # Directly update the display with the received text chunk
+                    self.update_streaming_display(chunk)
+                else:
+                    print("no chunk")
+
+            print(complete_response, "---------------------complete response")
+            return json.loads(complete_response)
+
+        except requests.exceptions.RequestException as e:
             logging.error(f"Error in API call: {str(e)}")
             self.update_status(f"API Error: {str(e)}", "error")
             return None
-        
-        finally:
-            self.hide_loader()  # Hide loader when API call is complete
-            # Add a small delay before removing the streaming display to let the user see the final result
-            self.root.after(2000, self.remove_streaming_display)
 
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {str(e)}")
+            self.update_status(f"An unexpected error occurred: {str(e)}", "error")
+            return None
+
+        finally:
+            self.hide_loader()
+            self.root.after(2000, self.remove_streaming_display)
     def create_streaming_display(self):
         """Create a UI element to display streaming API response"""
         self.streaming_frame = tk.Frame(self.root, bg=self.colors["bg_light"], bd=2, relief="solid")
@@ -1096,11 +1069,10 @@ class ScreenshotApp:
         self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
 
     def update_streaming_display(self, text):
-        """Update the streaming display with the latest formatted text"""
+        """Update the streaming display with the latest formatted text by appending."""
         self.streaming_text.config(state=tk.NORMAL)  # Allow editing
-        self.streaming_text.delete(1.0, tk.END)  # Clear existing text
-        
-        # Apply formatting and styling to the text
+
+        # Apply formatting and styling to the new text
         sections = text.split("\n\n")
         for section in sections:
             if ":" in section:
@@ -1108,7 +1080,7 @@ class ScreenshotApp:
                 title_end = section.find(":")
                 title = section[:title_end+1]
                 content = section[title_end+1:]
-                
+
                 # Insert title with styling
                 self.streaming_text.insert(tk.END, title, "section_title")
                 # Insert content with styling
@@ -1118,13 +1090,12 @@ class ScreenshotApp:
                 # If no title is found, just insert the text normally
                 self.streaming_text.insert(tk.END, section, "section_content")
                 self.streaming_text.insert(tk.END, "\n\n")
-        
+
         self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
         self.streaming_text.see(tk.END)  # Scroll to the end
-        
+
         # Update the UI immediately
         self.root.update_idletasks()
-
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
         if hasattr(self, 'streaming_frame'):
