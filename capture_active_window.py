@@ -1117,48 +1117,48 @@ class ScreenshotApp:
         finally:
             self.hide_loader()  # Hide loader when API call is complete
             # Add a small delay before removing the streaming display to let the user see the final result
-            self.root.after(2000, self.remove_streaming_display)
+            # self.root.after(2000, self.remove_streaming_display)
 
 
 
     def create_streaming_display(self):
         try:
             """Create a Text widget to display streaming API response using markdown"""
-            if not hasattr(self, 'streaming_text'):
+            # if not hasattr(self, 'streaming_text'):
                 # Create a frame for the streaming display
-                self.streaming_frame = ttk.Frame(self.screenshots_container)
-                self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-                
-                # Add a Text widget with markdown support
-                self.streaming_text = tk.Text(
-                    self.streaming_frame,
-                    wrap=tk.WORD,
-                    width=70,
-                    height=20,
-                    font=("Arial", 11),
-                    bg="white",
-                    padx=10,
-                    pady=10
-                )
-                self.streaming_text.pack(fill=tk.BOTH, expand=True)
-                
-                # Disable scrolling by not including a scrollbar
-                
-                # Configure text tags for styling
-                self.streaming_text.tag_configure("bold", font=("Arial", 12, "bold"))
-                self.streaming_text.tag_configure("regular", font=("Arial", 11))
-                self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
-                
-                self.streaming_text.config(state=tk.DISABLED)
+            self.streaming_frame = ttk.Frame(self.screenshots_container)
+            self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+            
+            # Add a Text widget with markdown support
+            self.streaming_text = tk.Text(
+                self.streaming_frame,
+                wrap=tk.WORD,
+                width=70,
+                height=20,
+                font=("Arial", 11),
+                bg="white",
+                padx=10,
+                pady=10
+            )
+            self.streaming_text.pack(fill=tk.BOTH, expand=True)
+            
+            # Disable scrolling by not including a scrollbar
+            
+            # Configure text tags for styling
+            self.streaming_text.tag_configure("bold", font=("Arial", 12, "bold"))
+            self.streaming_text.tag_configure("regular", font=("Arial", 11))
+            self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+            
+            self.streaming_text.config(state=tk.DISABLED)
         except Exception as e:
             print(str(e),"stream create")  # Make it read-only
 
     def update_streaming_display(self, text):
         try:
             """Update the main UI with markdown formatted text"""
-            if not hasattr(self, 'streaming_text'):
-                print("came 1-----------------------------")
-                self.create_streaming_display()
+            # if not hasattr(self, 'streaming_text'):
+            #     print("came 1-----------------------------")
+            self.create_streaming_display()
             
             self.streaming_text.config(state=tk.NORMAL)  # Allow editing
             self.streaming_text.delete(1.0, tk.END)  # Clear existing text
