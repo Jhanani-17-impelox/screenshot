@@ -1003,37 +1003,37 @@ class ScreenshotApp:
         markdown_display.config(state=tk.DISABLED)
 
         # Render the screenshot below the information
-        img = screenshot_data.get("image")
-        if img:
-            max_width = 600
-            width, height = img.size
-            ratio = min(max_width / width, 1.0)
-            new_width = int(width * ratio)
-            new_height = int(height * ratio)
-            thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-            photo = ImageTk.PhotoImage(thumbnail)
-            screenshot_data["photo"] = photo
+        # img = screenshot_data.get("image")
+        # if img:
+        #     max_width = 600
+        #     width, height = img.size
+        #     ratio = min(max_width / width, 1.0)
+        #     new_width = int(width * ratio)
+        #     new_height = int(height * ratio)
+        #     thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
+        #     photo = ImageTk.PhotoImage(thumbnail)
+        #     screenshot_data["photo"] = photo
 
-            image_label = ttk.Label(frame, image=photo)
-            image_label.image = photo
-            image_label.pack(pady=10)
+        #     image_label = ttk.Label(frame, image=photo)
+        #     image_label.image = photo
+        #     image_label.pack(pady=10)
 
-        # Add a header with the title and timestamp
-        title_label = ttk.Label(
-            frame,
-            text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
-            font=("Arial", 10, "bold"),
-            foreground=self.colors["primary"]
-        )
-        title_label.pack(pady=(5, 0))
+        # # Add a header with the title and timestamp
+        # title_label = ttk.Label(
+        #     frame,
+        #     text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
+        #     font=("Arial", 10, "bold"),
+        #     foreground=self.colors["primary"]
+        # )
+        # title_label.pack(pady=(5, 0))
 
-        # Add an "Open Image" button
-        open_button = ttk.Button(
-            frame,
-            text="Open Image",
-            command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-        )
-        open_button.pack(pady=(5, 0))
+        # # Add an "Open Image" button
+        # open_button = ttk.Button(
+        #     frame,
+        #     text="Open Image",
+        #     command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
+        # )
+        # open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
         
@@ -1183,7 +1183,9 @@ class ScreenshotApp:
 
     def make_api_call(self, payload):
         try:
-            url = "http://localhost:8001/v1/chat"
+            # url = "http://localhost:8001/v1/chat"
+            url = "http://taroapi.impelox.com:8001/v1/chat"
+
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'

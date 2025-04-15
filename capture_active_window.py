@@ -876,6 +876,12 @@ class ScreenshotApp:
         )
 
     def add_screenshot_to_ui(self, index, screenshot_data):
+        print(len(self.screenshots))
+        if len(self.screenshots) % 2 == 0:
+            bg=self.colors["bg_light"]
+        else:   
+            bg=self.colors["bg_dark"]
+        
         api_response = screenshot_data.get("api_response", {})
         inspector_notes = api_response.get("inspector_notes")
         engine_details = api_response.get("engine_details")
@@ -886,19 +892,19 @@ class ScreenshotApp:
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10, side=tk.TOP)
 
-        if img:
-            max_width = 600
-            width, height = img.size
-            ratio = min(max_width / width, 1.0)
-            new_width = int(width * ratio)
-            new_height = int(height * ratio)
-            thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-            photo = ImageTk.PhotoImage(thumbnail)
-            screenshot_data["photo"] = photo
+        # if img:
+        #     max_width = 600
+        #     width, height = img.size
+        #     ratio = min(max_width / width, 1.0)
+        #     new_width = int(width * ratio)
+        #     new_height = int(height * ratio)
+        #     thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
+        #     photo = ImageTk.PhotoImage(thumbnail)
+        #     screenshot_data["photo"] = photo
 
-            image_label = ttk.Label(frame, image=photo)
-            image_label.image = photo
-            image_label.pack(pady=(0, 10))
+            # image_label = ttk.Label(frame, image=photo)
+            # image_label.image = photo
+            # image_label.pack(pady=(0, 10))
 
         title_label = ttk.Label(
             frame,
@@ -907,12 +913,12 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         title_label.pack(pady=(5, 0))
-        open_button = ttk.Button(
-            frame,
-            text="Open Image",
-            command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-        )
-        open_button.pack(pady=(5, 0))
+        # open_button = ttk.Button(
+        #     frame,
+        #     text="Open Image",
+        #     command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
+        # )
+        # open_button.pack(pady=(5, 0))
 
         markdown_display = MarkdownText(
             frame,
@@ -920,7 +926,7 @@ class ScreenshotApp:
             width=70,
             height=20,
             font=("Arial", 11),
-            bg="white",
+            bg=bg,
             padx=10,
             pady=10
         )
@@ -1096,10 +1102,10 @@ class ScreenshotApp:
 
     def make_api_call(self, payload):
         try:
-            # url = "http://localhost:8001/v1/chat"
-            url = "http://taroapi.impelox.com:8001/v1/chat"
+            url = "http://localhost:8001/v1/chat"
+            # url = "http://taroapi.impelox.com:8001/v1/chat"
 
-            # url = "http://15.152.7.91:8001/v1/chat"
+            
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
