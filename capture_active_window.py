@@ -1,4 +1,3 @@
-###############this is the first 470 lines of code################
 
 import random
 import tkinter as tk
@@ -274,7 +273,7 @@ class MarkdownText(tk.Text):
             self.insert(tk.END, text, tag)
 class ScreenshotApp:
     def __init__(self, root):
-        logger.info("ScreenshotApp initialized.")
+        print("ScreenshotApp initialized.")
     
         
         self.root = root
@@ -360,7 +359,7 @@ class ScreenshotApp:
         try:
             with open(self.payload_file, 'w') as f:
                 json.dump(payload, f, indent=2)
-            logger.info(f"Payload saved to {self.payload_file}")
+            print(f"Payload saved to {self.payload_file}")
 
             self.update_status(f"Payload saved to {self.payload_file}", "success")
         except Exception as e:
@@ -439,19 +438,12 @@ class ScreenshotApp:
         self.button_window = tk.Toplevel(self.root)
         self.button_window.overrideredirect(True)
         self.button_window.attributes('-topmost', True)
-        
-        # Change from transparent to a normal window with configurable background
-        # self.button_window.attributes('-transparentcolor', '#f0f0f0')
-        
-        # Create a frame with black border that will act as the draggable area
         button_frame = tk.Frame(
             self.button_window,
-            bg="black",  # Black background for the outer frame
-            bd=4  # Border width (thickness of the black outline)
+            bg="black", 
+            bd=4  
         )
         button_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Inner frame for the actual button
         inner_frame = tk.Frame(button_frame, bg=self.colors["accent"])
         inner_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
         
@@ -499,32 +491,22 @@ class ScreenshotApp:
         capture_button.pack(padx=5, pady=5)
         
         self.position_floating_button()
-        
-        # Bind drag events to the button_frame (black border) for dragging
         button_frame.bind("<ButtonPress-1>", self.start_move)
         button_frame.bind("<ButtonRelease-1>", self.stop_move)
         button_frame.bind("<B1-Motion>", self.do_move)
-        
-        # Also bind events to inner_frame to ensure we can drag from any part of the window
         inner_frame.bind("<ButtonPress-1>", self.start_move)
         inner_frame.bind("<ButtonRelease-1>", self.stop_move)
         inner_frame.bind("<B1-Motion>", self.do_move)
-        
-        # The actual button only handles click events, not drag events
         capture_button.bind("<ButtonPress-1>", self.button_press)
         capture_button.bind("<ButtonRelease-1>", self.button_release)
 
     def position_floating_button(self):
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        
-        # Increase button size to account for the border
         button_width = 70
-        button_height = 70
-        
+        button_height = 70        
         x_position = screen_width - button_width - 40
-        y_position = screen_height - button_height - 40
-        
+        y_position = screen_height - button_height - 40        
         self.button_window.geometry(f"{button_width}x{button_height}+{x_position}+{y_position}")
 
     def start_move(self, event):
@@ -539,18 +521,13 @@ class ScreenshotApp:
 
     def do_move(self, event):
         if self.is_capturing:
-            return
-            
+            return            
         deltax = event.x - self.x
         deltay = event.y - self.y
         x = self.button_window.winfo_x() + deltax
         y = self.button_window.winfo_y() + deltay
         self.button_window.geometry(f"+{x}+{y}")
 
-
-
-###########this is the next 575 lines of code#####################
-    # Add new methods for button press and release specifically
     def button_press(self, event):
         """Handle button press event separately from drag start"""
         self.drag_started = False
@@ -566,10 +543,9 @@ class ScreenshotApp:
 
     def handle_capture(self):
         if self.is_capturing:
-            logger.info("Capture already in progress.")
+            print("Capture already in progress.")
             return
-        logger.info("Starting capture process.")
-            
+        print("Starting capture process.")            
         capture_thread = threading.Thread(target=self.capture_active_window)
         capture_thread.daemon = True
         capture_thread.start()
@@ -578,11 +554,8 @@ class ScreenshotApp:
         """Create a localized loader overlay with a spinning animation centered on the screen"""
         self.loader_frame = tk.Frame(parent, bg="#2D617F", relief="solid", bd=2)
         self.loader_frame.place(relx=0.5, rely=0.5, anchor="center", width=100, height=100)
-
         self.spinner_label = ttk.Label(self.loader_frame, background="#2D617F")
         self.spinner_label.pack(expand=True)
-
-        # Create spinning animation
         self.spinner_images = [
             ImageTk.PhotoImage(Image.new("RGB", (50, 50), (255, 255, 255)).rotate(angle))
             for angle in range(0, 360, 30)
@@ -600,18 +573,13 @@ class ScreenshotApp:
         loader_window = tk.Toplevel(self.root)
         loader_window.overrideredirect(True)
         loader_window.attributes('-topmost', True)
-        
-        # Calculate center of screen
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         window_width = 150
         window_height = 100
         x_position = (screen_width - window_width) // 2
-        y_position = (screen_height - window_height) // 2
-        
-        loader_window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
-        
-        # Create a frame with a border
+        y_position = (screen_height - window_height) // 2        
+        loader_window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")      
         frame = tk.Frame(loader_window, bg=self.colors["bg_light"], relief="solid", bd=2)
         frame.pack(fill=tk.BOTH, expand=True)
         
@@ -649,7 +617,6 @@ class ScreenshotApp:
 
 
     
-##########this is the next 530 lines of code#####################
 
     def get_window_info(self):
         system = platform.system()
@@ -673,7 +640,7 @@ class ScreenshotApp:
                 
                 return title, bounds
             except Exception as e:
-                print(f"Error getting window info on Windows: {e}")
+                logging.error(f"Error getting window info on Windows: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Darwin':  # macOS
@@ -699,8 +666,9 @@ class ScreenshotApp:
                 """
                 
                 result = subprocess.check_output(bounds_script, shell=True).decode('utf-8').strip()
-                bounds = [int(val) for val in result.split(',')]
-                return title, tuple(bounds)
+                bounds = tuple(int(val) for val in result.split(','))
+                
+                return title, bounds
             except Exception as e:
                 logging.error(f"Error getting window info on macOS: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
@@ -709,21 +677,17 @@ class ScreenshotApp:
             try:
                 import subprocess
                 
-                win_id_cmd = ["xdotool", "getactivewindow"]
-                win_id = subprocess.check_output(win_id_cmd).decode('utf-8').strip()
+                win_id = subprocess.check_output(["xdotool", "getactivewindow"]).decode('utf-8').strip()
+                title = subprocess.check_output(["xdotool", "getwindowname", win_id]).decode('utf-8').strip()
                 
-                name_cmd = ["xdotool", "getwindowname", win_id]
-                title = subprocess.check_output(name_cmd).decode('utf-8').strip()
+                geo_output = subprocess.check_output(["xdotool", "getwindowgeometry", win_id]).decode('utf-8')
                 
-                geo_cmd = ["xdotool", "getwindowgeometry", win_id]
-                geo_output = subprocess.check_output(geo_cmd).decode('utf-8')
-                
-                pos_line = [line for line in geo_output.split('\n') if "Position" in line][0]
+                pos_line = next(line for line in geo_output.split('\n') if "Position" in line)
                 pos_parts = pos_line.split(":")[1].strip().split(",")
                 x = int(pos_parts[0])
                 y = int(pos_parts[1])
                 
-                size_line = [line for line in geo_output.split('\n') if "Geometry" in line][0]
+                size_line = next(line for line in geo_output.split('\n') if "Geometry" in line)
                 size_parts = size_line.split(":")[1].strip().split("x")
                 width = int(size_parts[0])
                 height = int(size_parts[1])
@@ -732,52 +696,53 @@ class ScreenshotApp:
             except Exception as e:
                 logging.error(f"Error getting window info on Linux: {e}")
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
-            
-        logging.warning("Unknown operating system. Returning default window info.")
-        return f"Window_{datetime.now().strftime('%H%M%S')}", None
-    
+        
+        # Default fallback for unknown systems
+        return f"Window_{datetime.now().strftime('%H%M%S')}", None 
     def capture_active_window(self):
+        import time
+        start_time = time.time()
+        
         self.is_capturing = True
-        # self.show_loader()  # Show loader centered on the screen
-        logger.info("Loader shown for capture process.")
+        print("Starting capture process.")
 
         try:
+            # Hide windows during capture
             self.root.withdraw()
             self.button_window.withdraw()
-            logger.info("Windows hidden for capture.")
+            print("Windows hidden for capture.")
             
-            time.sleep(0.5)
-            
+            window_info_start = time.time()
             window_title, window_bounds = self.get_window_info()
-            logger.info(f"Captured window title: {window_title}")
+            print(f"Captured window title: {window_title}")
+            print(f"Window info retrieval took {time.time() - window_info_start:.3f} seconds")
             
+            # Validate window - don't capture our own app
             if "Taro " in window_title or not window_title:
                 self.root.deiconify()
                 self.button_window.deiconify()
                 self.update_status("No active window detected or captured our own app", "info")
                 self.is_capturing = False
-                # self.hide_loader()  # Hide loader on failure
                 return
             
-            # Take high-resolution screenshot
+            # Take screenshot based on available window information
+            screenshot_start = time.time()
             if window_bounds:
                 x, y, width, height = window_bounds
-                logger.info(f"Window bounds: {window_bounds}")
+                print(f"Window bounds: {window_bounds}")
                 
                 if width <= 0 or height <= 0:
                     self.root.deiconify()
                     self.button_window.deiconify()
                     self.update_status("Invalid window dimensions detected", "error")
                     self.is_capturing = False
-                    # self.hide_loader()  # Hide loader on failure
                     return
                 
                 screenshot = pyautogui.screenshot(region=(x, y, width, height))
                 capture_type = "active window"
-
-                logger.info("Screenshot taken for active window.")
-
+                print("Screenshot taken for active window.")
             else:
+                # Platform-specific fallback for Windows
                 if platform.system() == 'Windows':
                     try:
                         import win32gui
@@ -786,7 +751,6 @@ class ScreenshotApp:
                         from PIL import Image
                         
                         hwnd = win32gui.GetForegroundWindow()
-                        
                         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
                         width = right - left
                         height = bottom - top
@@ -797,10 +761,9 @@ class ScreenshotApp:
                         
                         saveBitMap = win32ui.CreateBitmap()
                         saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
-                        
                         saveDC.SelectObject(saveBitMap)
                         
-                        result = windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 0)
+                        windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 0)
                         
                         bmpinfo = saveBitMap.GetInfo()
                         bmpstr = saveBitMap.GetBitmapBits(True)
@@ -809,6 +772,7 @@ class ScreenshotApp:
                             (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
                             bmpstr, 'raw', 'BGRX', 0, 1)
                         
+                        # Cleanup resources
                         win32gui.DeleteObject(saveBitMap.GetHandle())
                         saveDC.DeleteDC()
                         mfcDC.DeleteDC()
@@ -820,44 +784,46 @@ class ScreenshotApp:
                         screenshot = pyautogui.screenshot()
                         capture_type = "full screen (fallback)"
                 else:
-
                     logger.warning("Falling back to full screen capture.")
-                    
                     screenshot = pyautogui.screenshot()
                     capture_type = "full screen (fallback)"
+            print(f"Screenshot capture took {time.time() - screenshot_start:.3f} seconds")
 
-            
+            # Restore app windows
             self.root.deiconify()
             self.button_window.deiconify()
             
+            # Create filename from window title
+            file_start = time.time()
             sanitized_title = ''.join(c for c in window_title if c.isalnum() or c in ' -_')[:30]
             timestamp = datetime.now().strftime("%H%M%S")
             filename = f"screenshot_{timestamp}_{sanitized_title}.png"
             file_path = os.path.join(self.temp_dir, filename)
             
-            # Save original high-resolution image
-            screenshot.save(file_path, quality=95)
+            # # Save original high-resolution image
+            # screenshot.save(file_path, quality=95)
+            # print(f"File saving took {time.time() - file_start:.3f} seconds")
             
             # Compress image for base64 encoding
+            compression_start = time.time()
             compressed_img = self.compress_image(screenshot)
+            print(f"Image compression took {time.time() - compression_start:.3f} seconds")
             
-            # Convert screenshot to base64
+            # Convert screenshot to base64 (optimized)
+            base64_start = time.time()
             buffered = BytesIO()
-            # screenshot.save(buffered, format="PNG", optimize=True)
             compressed_img.save(buffered, format="PNG", optimize=True)
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
+            print(f"Base64 conversion took {time.time() - base64_start:.3f} seconds")
             
-            # Add data URI prefix to base64 string
-            # img_str = f"data:image/png;base64,{img_str_raw}"
-            img_str =img_str_raw
-            
-            # Create JSON payload with the base64 image
+            # Create API payload
+            api_start = time.time()
             session_id = str(uuid.uuid4())
             payload_json = {
                 "session_id": session_id,
                 "user_message": {
                     "type": "image",
-                    "image": [img_str],
+                    "image": [img_str_raw],
                 },
                 "conversation_history": [
                     {
@@ -866,44 +832,44 @@ class ScreenshotApp:
                         "attachments": [
                             {
                                 "type": "file",
-                                "base64String": [img_str]
+                                "base64String": [img_str_raw]
                             }
                         ]
                     }
                 ]
             }
             
-            # Comment out the API call and use mock response
+            # Make API call
             result = self.make_api_call(payload_json)
-            print(type(result))
-            if  result==None:
-               
+            print(f"API call took {time.time() - api_start:.3f} seconds")
+            
+            if result is None:
                 return
-            else:
-                self.save_payload_to_file(payload_json)
+                
+            # Add to screenshots list (at the beginning)
+            ui_update_start = time.time()
+            self.screenshots.insert(0, {
+                "image": screenshot,
+                "title": window_title,
+                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                "path": file_path,
+                "base64": img_str_raw,
+                "payload_json": payload_json,
+                "api_response": result
+            })
             
-                # Add to screenshots list (at the beginning)
-                self.screenshots.insert(0, {
-                    "image": screenshot,
-                    "title": window_title,
-                    "timestamp": datetime.now().strftime("%H:%M:%S"),
-                    "path": file_path,
-                    "base64": img_str,
-                    "payload_json": payload_json,
-                    "api_response": result
-                })
-                
-                # Clear existing screenshots from UI
-                for widget in self.screenshots_container.winfo_children():
-                    widget.destroy()
-                
-                # Update the UI with all screenshots (newest first)
-                for i in range(len(self.screenshots)):
-                    self.add_screenshot_to_ui(i)
-                
-                self.update_status(f"Captured {capture_type}: {window_title}", "success")
+            # Update UI efficiently by clearing and repopulating
+            for widget in self.screenshots_container.winfo_children():
+                widget.destroy()
             
-                logger.info(f"Captured {capture_type}: {window_title}")
+            # Update the UI with all screenshots (newest first)
+            for i in range(len(self.screenshots)):
+                self.add_screenshot_to_ui(i)
+            print(f"UI update took {time.time() - ui_update_start:.3f} seconds")
+            
+            self.update_status(f"Captured {capture_type}: {window_title}", "success")
+            print(f"Captured {capture_type}: {window_title}")
+            print(f"Total capture_active_window execution time: {time.time() - start_time:.3f} seconds")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
@@ -911,9 +877,7 @@ class ScreenshotApp:
         
         finally:
             self.is_capturing = False
-            # self.hide_loader()  # Hide loader when capture is complete
-
-    
+            print(f"Total function execution time (including error handling): {time.time() - start_time:.3f} seconds")
     def compress_image(self, image, quality=60, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size

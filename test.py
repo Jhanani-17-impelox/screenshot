@@ -701,8 +701,17 @@ class ScreenshotApp:
         return f"Window_{datetime.now().strftime('%H%M%S')}", None 
     def capture_active_window(self):
         import time
+        from datetime import datetime
+        import os
+        import platform
+        import uuid
+        import base64
+        from io import BytesIO
+        import logging
+        import pyautogui  # Make sure this is imported at the top of your file
+
         start_time = time.time()
-        
+
         self.is_capturing = True
         print("Starting capture process.")
 
@@ -711,12 +720,12 @@ class ScreenshotApp:
             self.root.withdraw()
             self.button_window.withdraw()
             print("Windows hidden for capture.")
-            
+
             window_info_start = time.time()
             window_title, window_bounds = self.get_window_info()
             print(f"Captured window title: {window_title}")
             print(f"Window info retrieval took {time.time() - window_info_start:.3f} seconds")
-            
+
             # Validate window - don't capture our own app
             if "Taro " in window_title or not window_title:
                 self.root.deiconify()
@@ -724,20 +733,22 @@ class ScreenshotApp:
                 self.update_status("No active window detected or captured our own app", "info")
                 self.is_capturing = False
                 return
-            
+
             # Take screenshot based on available window information
             screenshot_start = time.time()
+            screenshot = None
+            capture_type = ""
             if window_bounds:
                 x, y, width, height = window_bounds
                 print(f"Window bounds: {window_bounds}")
-                
+
                 if width <= 0 or height <= 0:
                     self.root.deiconify()
                     self.button_window.deiconify()
                     self.update_status("Invalid window dimensions detected", "error")
                     self.is_capturing = False
                     return
-                
+
                 screenshot = pyautogui.screenshot(region=(x, y, width, height))
                 capture_type = "active window"
                 print("Screenshot taken for active window.")
@@ -749,41 +760,42 @@ class ScreenshotApp:
                         import win32ui
                         from ctypes import windll
                         from PIL import Image
-                        
+
                         hwnd = win32gui.GetForegroundWindow()
                         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
                         width = right - left
                         height = bottom - top
-                        
+
                         hwndDC = win32gui.GetWindowDC(hwnd)
                         mfcDC = win32ui.CreateDCFromHandle(hwndDC)
                         saveDC = mfcDC.CreateCompatibleDC()
-                        
+
                         saveBitMap = win32ui.CreateBitmap()
                         saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
                         saveDC.SelectObject(saveBitMap)
-                        
+
                         windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 0)
-                        
+
                         bmpinfo = saveBitMap.GetInfo()
                         bmpstr = saveBitMap.GetBitmapBits(True)
                         screenshot = Image.frombuffer(
                             'RGB',
                             (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
                             bmpstr, 'raw', 'BGRX', 0, 1)
-                        
+
                         # Cleanup resources
                         win32gui.DeleteObject(saveBitMap.GetHandle())
                         saveDC.DeleteDC()
                         mfcDC.DeleteDC()
                         win32gui.ReleaseDC(hwnd, hwndDC)
-                        
+
                         capture_type = "active window"
                     except Exception as e:
                         logging.error(f"Error capturing active window on Windows: {e}")
                         screenshot = pyautogui.screenshot()
                         capture_type = "full screen (fallback)"
                 else:
+                    logger = logging.getLogger(__name__) # Assuming you have logging configured
                     logger.warning("Falling back to full screen capture.")
                     screenshot = pyautogui.screenshot()
                     capture_type = "full screen (fallback)"
@@ -792,30 +804,24 @@ class ScreenshotApp:
             # Restore app windows
             self.root.deiconify()
             self.button_window.deiconify()
-            
-            # Create filename from window title
-            file_start = time.time()
+
             sanitized_title = ''.join(c for c in window_title if c.isalnum() or c in ' -_')[:30]
             timestamp = datetime.now().strftime("%H%M%S")
             filename = f"screenshot_{timestamp}_{sanitized_title}.png"
             file_path = os.path.join(self.temp_dir, filename)
-            
-            # # Save original high-resolution image
-            # screenshot.save(file_path, quality=95)
-            # print(f"File saving took {time.time() - file_start:.3f} seconds")
-            
+
             # Compress image for base64 encoding
             compression_start = time.time()
             compressed_img = self.compress_image(screenshot)
             print(f"Image compression took {time.time() - compression_start:.3f} seconds")
-            
+
             # Convert screenshot to base64 (optimized)
             base64_start = time.time()
             buffered = BytesIO()
             compressed_img.save(buffered, format="PNG", optimize=True)
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
             print(f"Base64 conversion took {time.time() - base64_start:.3f} seconds")
-            
+
             # Create API payload
             api_start = time.time()
             session_id = str(uuid.uuid4())
@@ -838,17 +844,17 @@ class ScreenshotApp:
                     }
                 ]
             }
-            
+
             # Make API call
             result = self.make_api_call(payload_json)
             print(f"API call took {time.time() - api_start:.3f} seconds")
-            
+
             if result is None:
                 return
-                
+
             # Add to screenshots list (at the beginning)
             ui_update_start = time.time()
-            self.screenshots.insert(0, {
+            new_screenshot_data = {
                 "image": screenshot,
                 "title": window_title,
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
@@ -856,17 +862,14 @@ class ScreenshotApp:
                 "base64": img_str_raw,
                 "payload_json": payload_json,
                 "api_response": result
-            })
-            
-            # Update UI efficiently by clearing and repopulating
-            for widget in self.screenshots_container.winfo_children():
-                widget.destroy()
-            
-            # Update the UI with all screenshots (newest first)
-            for i in range(len(self.screenshots)):
-                self.add_screenshot_to_ui(i)
+            }
+            self.screenshots.insert(0, new_screenshot_data)
+
+            # Add the newly captured screenshot to the UI at the top
+            self.add_screenshot_to_ui(0, new_screenshot_data)
+
             print(f"UI update took {time.time() - ui_update_start:.3f} seconds")
-            
+
             self.update_status(f"Captured {capture_type}: {window_title}", "success")
             print(f"Captured {capture_type}: {window_title}")
             print(f"Total capture_active_window execution time: {time.time() - start_time:.3f} seconds")
@@ -874,7 +877,7 @@ class ScreenshotApp:
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
-        
+
         finally:
             self.is_capturing = False
             print(f"Total function execution time (including error handling): {time.time() - start_time:.3f} seconds")
@@ -920,21 +923,22 @@ class ScreenshotApp:
             foreground=fg_color
         )
 
-    def add_screenshot_to_ui(self, index):
-        screenshot_data = self.screenshots[index]
+    def add_screenshot_to_ui(self, index, screenshot_data):
+        start_time = time.time()  # Record start time
 
-        # Extract API response
+        # Extract data once
         api_response = screenshot_data.get("api_response", {})
-        inspector_notes = api_response.get("inspector_notes", None)
-        engine_details = api_response.get("engine_details", None)
-        fault_accident = api_response.get("fault_accident", None)
+        inspector_notes = api_response.get("inspector_notes")
+        engine_details = api_response.get("engine_details")
+        fault_accident = api_response.get("fault_accident")
         has_engine_issue = api_response.get("has_engine_issue", False)
+        img = screenshot_data.get("image")
 
         # Create a single frame for all content
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
-        frame.pack(fill=tk.X, pady=(0, 15), padx=10)
+        frame.pack(fill=tk.X, pady=(0, 15), padx=10, side=tk.TOP)
 
-        # Create a MarkdownText widget for better formatted display
+        # Create a MarkdownText widget
         markdown_display = MarkdownText(
             frame,
             wrap=tk.WORD,
@@ -946,64 +950,49 @@ class ScreenshotApp:
             pady=10
         )
         markdown_display.pack(fill=tk.BOTH, expand=True)
-        
+
         # Build the markdown content
         markdown_content = ""
-        
+
         # Inspector Notes Section
         if inspector_notes and inspector_notes.strip():
-            markdown_content += "**Inspector Notes:**\n" + inspector_notes.strip() + "\n\n"
+            markdown_content += f"**Inspector Notes:**\n{inspector_notes.strip()}\n\n"
 
         # Engine Details Section (with red highlighting if engine issue)
         if engine_details and engine_details.strip():
             if has_engine_issue:
-                # We'll handle special styling for this section separately
                 markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
             else:
-                markdown_content += "**Engine Details:**\n" + engine_details.strip() + "\n\n"
+                markdown_content += f"**Engine Details:**\n{engine_details.strip()}\n\n"
 
         # Fault/Accident Details Section
         if fault_accident and fault_accident.strip():
-            markdown_content += "**Faults, Precautions, or Accident Information:**\n" + fault_accident.strip() + "\n\n"
-        
-        # Update the markdown display with our content
+            markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
+
+        # Update the markdown display
         markdown_display.config(state=tk.NORMAL)
-        
-        # Check for engine issue to apply special formatting
+
         if has_engine_issue and engine_details:
-            # Process markdown with special handling for engine issue
             parts = markdown_content.split("<<<**Engine Description:**>>>")
-            
-            # Insert the first part normally
             markdown_display.insert_markdown(parts[0])
-            
-            # Insert the engine issue marker in red
             markdown_display.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
-            
-            # Find where the next section begins
+
             engine_text = parts[1]
             next_section = re.search(r'\n\n\*\*', engine_text)
-            
+
             if next_section:
-                # Insert engine details in red
-                engine_details = engine_text[:next_section.start()]
-                markdown_display.insert(tk.END, engine_details.strip(), "engine_issue")
-                
-                # Insert the rest of the text normally
+                engine_details_part = engine_text[:next_section.start()]
+                markdown_display.insert(tk.END, engine_details_part.strip(), "engine_issue")
                 remaining_text = engine_text[next_section.start():]
                 markdown_display.insert_markdown(remaining_text)
             else:
-                # Just insert the engine part in red
                 markdown_display.insert(tk.END, engine_text.strip(), "engine_issue")
         else:
-            # No engine issue, just insert the whole text
             markdown_display.insert_markdown(markdown_content)
-        
-        # Make it read-only
+
         markdown_display.config(state=tk.DISABLED)
 
         # Render the screenshot below the information
-        img = screenshot_data.get("image")
         if img:
             max_width = 600
             width, height = img.size
@@ -1012,7 +1001,7 @@ class ScreenshotApp:
             new_height = int(height * ratio)
             thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
             photo = ImageTk.PhotoImage(thumbnail)
-            screenshot_data["photo"] = photo
+            screenshot_data["photo"] = photo # You might not need to store this
 
             image_label = ttk.Label(frame, image=photo)
             image_label.image = photo
@@ -1036,7 +1025,11 @@ class ScreenshotApp:
         open_button.pack(pady=(5, 0))
 
         self.on_frame_configure(None)
-        
+
+        end_time = time.time()  # Record end time
+        execution_time = end_time - start_time
+        print(f"Execution time for add_screenshot_to_ui (index {index}): {execution_time:.4f} seconds")
+
     def strip_html_tags(self, html_text):
         """Remove HTML tags from text"""
         import re
