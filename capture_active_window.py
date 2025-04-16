@@ -787,6 +787,8 @@ class ScreenshotApp:
             img_str_raw = base64.b64encode(buffered.getvalue()).decode()
 
             session_id = str(uuid.uuid4())
+            self.update_status("Analyzing screenshot...", "analyzing")
+
             payload_json = {
                 "session_id": session_id,
                 "user_message": {
@@ -865,6 +867,9 @@ class ScreenshotApp:
         elif status_type == "error":
             bg_color = self.colors["error"]
             fg_color = self.colors["text_light"]
+        elif status_type == "analyzing":
+            bg_color = '#C8DFF6'
+            fg_color = '#000000'
         else:  # info
             bg_color = self.colors["secondary"]
             fg_color = self.colors["text_light"]
