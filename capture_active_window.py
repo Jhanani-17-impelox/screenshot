@@ -1118,22 +1118,12 @@ class ScreenshotApp:
 
             response = requests.post(url, json=payload, headers=headers, stream=True)
             response.raise_for_status()
-            print(response.status_code)
+            print(response.json().get("assistant_message", ""))
             
 
-            buffer = ""
-            full_response = ""
+           
 
-            for chunk in response.iter_content(chunk_size=10, decode_unicode=True):
-                if chunk:
-                    buffer += chunk
-                    try:
-                        full_response = buffer
-                    except Exception as e:
-                        logging.error(f"Error updating display: {str(e)}")
-                        continue
-
-            structured_response = self.parse_markdown_response(full_response)
+            structured_response = self.parse_markdown_response(response.json().get("assistant_message", ""))
             return structured_response
 
         except Exception as e:
