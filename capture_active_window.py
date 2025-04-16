@@ -1102,8 +1102,8 @@ class ScreenshotApp:
 
     def make_api_call(self, payload):
         try:
-            url = "http://localhost:8001/v1/chat"
-            # url = "http://taroapi.impelox.com:8001/v1/chat"
+            # url = "http://localhost:8001/v1/chat"
+            url = "https://taroapi.impelox.com/v1/chat"
 
             
             headers = {
