@@ -358,6 +358,11 @@ class ScreenshotApp:
             self.update_status(f"Payload saved to {self.payload_file}", "success")
         except Exception as e:
             logging.error(f"Error saving payload: {str(e)}") 
+            self.log_error({
+  "occured_while": "save_payload_to_file",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
             self.update_status(f"Error saving payload: {str(e)}", "error")
 
     def setup_icon(self):
@@ -367,6 +372,7 @@ class ScreenshotApp:
             self.root.iconphoto(False, photo)
 
         except Exception as e:
+            
             logging.error(f"Error setting up icon: {str(e)}")
     
     def create_main_layout(self):
@@ -470,6 +476,11 @@ class ScreenshotApp:
                 )
         except Exception as e:
             logging.error(f"Error creating capture button: {str(e)}")
+            self.log_error({
+  "occured_while": "create_floating_button",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
             capture_button = tk.Button(
                 inner_frame,
                 text="📷",
@@ -633,6 +644,11 @@ class ScreenshotApp:
                 return title, bounds
             except Exception as e:
                 logging.error(f"Error getting window info on Windows: {e}")
+                self.log_error({
+  "occured_while": "get_window_info",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
                 return f"Window_{datetime.now().strftime('%H%M%S')}", None
         
         elif system == 'Darwin':  # macOS
@@ -831,6 +847,11 @@ class ScreenshotApp:
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
+            self.log_error({
+  "occured_while": "capture_active_window",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
 
         finally:
@@ -1128,6 +1149,45 @@ class ScreenshotApp:
 
         except Exception as e:
             logging.error(f"Error in API call: {str(e)}")
+            self.log_error({
+  "occured_while": "Making API call",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
+            self.update_status(f"API Error: {str(e)}", "error")
+            return None
+        
+        finally:
+            self.root.after(1000, self.remove_streaming_display)
+
+
+
+    def log_error(self, payload):
+        try:
+            url = "http://localhost:8001/v1/conversations/log-error"
+            # url = "https://taroapi.impelox.com/v1/chat"
+
+            
+            headers = {
+                "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+            }
+
+            response = requests.post(url, json=payload, headers=headers, stream=True)
+
+            
+
+           
+
+            
+
+        except Exception as e:
+            logging.error(f"Error in API call: {str(e)}")
+            self.log_error({
+  "occured_while": "insert in error log api",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
             self.update_status(f"API Error: {str(e)}", "error")
             return None
         
