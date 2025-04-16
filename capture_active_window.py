@@ -1134,7 +1134,7 @@ class ScreenshotApp:
             
             headers = {
                 "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKu'
             }
 
             response = requests.post(url, json=payload, headers=headers, stream=True)
@@ -1164,8 +1164,9 @@ class ScreenshotApp:
 
     def log_error(self, payload):
         try:
-            url = "http://localhost:8001/v1/conversations/log-error"
-            # url = "https://taroapi.impelox.com/v1/chat"
+            
+            # url = "http://localhost:8001/v1/conversations/log-error"
+            url = "https://taroapi.impelox.com/v1/conversations/log-error"
 
             
             headers = {
@@ -1173,7 +1174,8 @@ class ScreenshotApp:
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
-            response = requests.post(url, json=payload, headers=headers, stream=True)
+            response = requests.post(url, json=payload, headers=headers)
+            print(response)
 
             
 
