@@ -33,72 +33,148 @@ logger = logging.getLogger(__name__)
 # Add these imports at the top of your file
 import webbrowser
 from tkhtmlview import HTMLLabel, HTMLScrolledText, RenderHTML
+class MarkdownText(tk.Text):
+    """A Text widget with improved Markdown rendering capabilities"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tag_configure("bold", font=("Courier", 10, "bold"))
+        self.tag_configure("italic", font=("Courier", 10, "italic"))
+        self.tag_configure("heading1", font=("Courier", 14, "bold"))
+        self.tag_configure("heading2", font=("Courier", 12, "bold"))
+        self.tag_configure("heading3", font=("Courier", 11, "bold"))
+        self.tag_configure("code", background="#f0f0f0", font=("Courier", 9))
+        self.tag_configure("bullet", lmargin1=20, lmargin2=30)
+        self.tag_configure("link", foreground="blue", underline=1)
 
-class HTMLDisplay:
-    """A class to handle HTML rendering in the Tkinter app"""
-    def __init__(self, parent, html_content, width=800, height=None, padx=10, pady=10):
-        self.parent = parent
-        
-        # Process the HTML content to ensure tables render properly
-        self.html_content = self._process_html(html_content)
-        
-        # Create the HTML display widget
-        self.html_widget = HTMLScrolledText(
-            parent, 
-            html=self.html_content,
-            width=width,
-            height=height,
-            padx=padx,
-            pady=pady
-        )
-        
-        # Configure styling and disable editing
-        self.html_widget.configure(
-            font=("Arial", 10),
-            cursor="arrow",
-            background="#ffffff",
-            state="disabled"  # Make the widget uneditable
-        )
-        
-    def pack(self, **kwargs):
-        """Pack the HTML widget with the specified options"""
-        self.html_widget.pack(**kwargs)
-        
-    def update_html(self, new_html):
-        """Update the HTML content"""
-        self.html_content = self._process_html(new_html)
-        self.html_widget.set_html(self.html_content)
-        self.html_widget.configure(state="disabled")  # Ensure it remains uneditable
+        # Table styling with background colors
+        self.tag_configure("table_border", foreground="#555555")
+        self.tag_configure("table_header", 
+                        font=("Courier", 10, "bold"), 
+                        foreground="#000000",
+                        background="#e1e5eb")  # Light gray background for header
+        self.tag_configure("table_row_even", 
+                        foreground="#333333",
+                        background="#f5f7fa")  # Very light gray for even rows
+        self.tag_configure("table_row_odd", 
+                        foreground="#333333",
+                        background="#ffffff")  # White for odd rows
 
-    def _process_html(self, html_content):
-        """Process HTML to ensure tables render properly without showing style tags"""
-        # Wrap the HTML in a proper HTML document structure if it's not already
-        if not html_content.strip().startswith("<html>"):
-            html_content = f"""
-            <html>
-            <head>
-            <style>
-                /* Table styling */
-                table {{ border-collapse: collapse; width: auto; margin: 10px 0; }}
-                th, td {{ border: 1px solid #000000; padding: 10px; text-align: left; }}
-                th {{ font-weight: bold; color: #1a237e; background-color: #ffffff; }}
-                td {{ background-color: #ffffff; }}
+    def insert_markdown(self, text):
+        """Parse and insert markdown text"""
+        # Clear current content
+        self.delete(1.0, tk.END)
+        
+        # Process lines
+        code_block = False
+        bullet_list = False
+        table_mode = False
+        table_rows = []
+        
+        lines = text.split('\n')
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            
+            # Code blocks
+            if line.strip().startswith('```'):
+                code_block = not code_block
+                if not code_block:  # End of code block
+                    self.insert(tk.END, '\n')
+                i += 1
+                continue
+            
+            if code_block:
+                self.insert(tk.END, line + '\n', "code")
+                i += 1
+                continue
+            
+            # Table detection
+            if line.strip().startswith('|') and '|' in line[1:]:
+                if not table_mode:
+                    table_mode = True
+                    table_rows = []
                 
-                /* Content styling */
-                .section {{ margin-bottom: 15px; padding: 0; }}
-                h3 {{ color: #4a6baf; margin: 10px 0 5px 0; padding: 0; font-size: 14px; border-bottom: 1px solid #e1e5eb; }}
-                p {{ margin: 5px 0; line-height: 1.4; text-align: justify; }}
-                .issue {{ color: #cc0000; }}
-                .highlight {{ background-color: #fff3cd; padding: 2px; }}
-            </style>
-            </head>
-            <body>
-            {html_content}
-            </body>
-            </html>
-            """
-        return html_content
-    
+                table_rows.append(line)
+                i += 1
+                
+                # Check if next line is a separator line or if this is the end of the table
+                if i < len(lines) and lines[i].strip().startswith('|') and '-' in lines[i]:
+                    table_rows.append(lines[i])
+                    i += 1
+                    continue
+                
+                # Peek ahead to see if the table continues
+                if i < len(lines) and lines[i].strip().startswith('|'):
+                    continue
+                else:
+                    # Process the complete table
+                    self.process_table(table_rows)
+                    table_mode = False
+                    continue
+            
+            # Headings
+            if line.strip().startswith('# '):
+                self.insert(tk.END, line[2:] + '\n', "heading1")
+                i += 1
+                continue
+            elif line.strip().startswith('## '):
+                self.insert(tk.END, line[3:] + '\n', "heading2")
+                i += 1
+                continue
+            elif line.strip().startswith('### '):
+                self.insert(tk.END, line[4:] + '\n', "heading3")
+                i += 1
+                continue
+            
+            # Bullet lists
+            if line.strip().startswith('- ') or line.strip().startswith('* '):
+                bullet_list = True
+                self.insert(tk.END, '• ' + line[2:].strip() + '\n', "bullet")
+                i += 1
+                continue
+            
+            # Process inline formatting
+            self.process_inline_markdown(line)
+            self.insert(tk.END, '\n')
+            bullet_list = False
+            i += 1
+    def process_inline_markdown(self, line):
+        """Process inline markdown elements like bold, italic, and links"""
+        line_remaining = line
+        
+        while line_remaining:
+            # Find the first occurrence of each pattern
+            bold_match = re.search(r'\*\*(.*?)\*\*', line_remaining)
+            italic_match = re.search(r'\*(.*?)\*', line_remaining)
+            link_match = re.search(r'\[(.*?)\]\((.*?)\)', line_remaining)
+            
+            # Determine which pattern comes first, if any
+            matches = []
+            if bold_match:
+                matches.append(('bold', bold_match.start(), bold_match.end(), bold_match.group(1)))
+            if italic_match:
+                matches.append(('italic', italic_match.start(), italic_match.end(), italic_match.group(1)))
+            if link_match:
+                matches.append(('link', link_match.start(), link_match.end(), link_match.group(1)))
+            
+            # If no matches, insert remaining text and exit
+            if not matches:
+                self.insert(tk.END, line_remaining)
+                break
+            
+            # Sort matches by start position
+            matches.sort(key=lambda x: x[1])
+            match_type, start, end, content = matches[0]
+            
+            # Insert text before the match
+            if start > 0:
+                self.insert(tk.END, line_remaining[:start])
+            
+            # Insert matched content with appropriate tag
+            self.insert(tk.END, content, match_type)
+            
+            # Update remaining line
+            line_remaining = line_remaining[end:]
 class ScreenshotApp:
     def __init__(self, root):
         logger.info("ScreenshotApp initialized.")
@@ -108,6 +184,7 @@ class ScreenshotApp:
         self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
+        self.is_streaming = False 
 
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.payload_file = os.path.join(self.script_dir, "payload.json")
@@ -246,6 +323,8 @@ class ScreenshotApp:
 
         # Bind mouse wheel scrolling
         self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+        self.parent_frame = self.screenshots_container
+        self.streaming_text = None
 
     def on_canvas_configure(self, event):
         """Adjust the canvas width to match the container"""
@@ -651,51 +730,47 @@ class ScreenshotApp:
                     }
                 ]
             }
-            screenshot_data = {
-                "image": screenshot,
-                "title": window_title,
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "path": file_path,
-                "base64": img_str,
-                "payload_json": payload_json,
-                "api_response": None  # Initialize to None
-            }
-            self.screenshots.insert(0, screenshot_data)
-
-            # Clear existing screenshots from UI
-            for widget in self.screenshots_container.winfo_children():
-                widget.destroy()
-
-            # Add the new screenshot UI with the streaming text widget
-            self.add_screenshot_to_ui(0)
-
-            # Get the streaming text widget for the latest screenshot
-            if self.screenshots and "streaming_text_widget" in self.screenshots[0]:
-                global streaming_text_widget_global
-                streaming_text_widget_global = self.screenshots[0]["streaming_text_widget"]
-
-            result, value = self.make_api_call(payload_json)
-
-            if self.screenshots and "api_response" in self.screenshots[0]:
-                self.screenshots[0]["api_response"] = result
-                # Re-render the UI to show the complete response
+            
+            # Comment out the API call and use mock response
+            result = self.make_api_call(payload_json)
+            print(result)
+            if result==None:
+                return
+            else:
+                self.save_payload_to_file(payload_json)
+            
+                # Add to screenshots list (at the beginning)
+                self.screenshots.insert(0, {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    "base64": img_str,
+                    "payload_json": payload_json,
+                    "api_response": result
+                })
+                
+                # Clear existing screenshots from UI
                 for widget in self.screenshots_container.winfo_children():
                     widget.destroy()
+                
+                # Update the UI with all screenshots (newest first)
                 for i in range(len(self.screenshots)):
                     self.add_screenshot_to_ui(i)
-
-            self.update_status(f"Captured {capture_type}: {window_title}", "success")
-            logger.info(f"Captured {capture_type}: {window_title}")
+                
+                self.update_status(f"Captured {capture_type}: {window_title}", "success")
+            
+                logger.info(f"Captured {capture_type}: {window_title}")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
-
+        
         finally:
             self.is_capturing = False
-            self.hide_loader()
-            if streaming_text_widget_global:
-                streaming_text_widget_global.pack_forget()
+            self.hide_loader()  # Hide loader when capture is complete
+
+    
     def compress_image(self, image, quality=60, max_size=1024):
         """Compress image to reduce file size while maintaining quality"""
         width, height = image.size
@@ -739,93 +814,95 @@ class ScreenshotApp:
         )
 
     def add_screenshot_to_ui(self, index):
-        screenshot_data = self.screenshots[index]
+        try:
+            screenshot_data = self.screenshots[index]
+        
+            # Check if API response exists
+            response_text = screenshot_data.get("api_response", "No API response available")
 
-        # Extract API response
-        api_response = screenshot_data.get("api_response", "") # Default to an empty string
+            frame = ttk.Frame(self.screenshots_container)
+            frame.pack(fill=tk.X, pady=(0, 15), padx=10)
 
-        inspector_notes = None
-        engine_details = None
-        fault_accident = None
+            # --- API Response Card ---
+            response_card = ttk.Frame(frame, relief="solid", borderwidth=1, padding=10)
+            response_card.pack(fill=tk.X, padx=5, pady=5)
 
-        if isinstance(api_response, dict):
-            inspector_notes = api_response.get("inspector_notes", None)
-            engine_details = api_response.get("engine_details", None)
-            fault_accident = api_response.get("fault_accident", None)
-        elif isinstance(api_response, str):
-            inspector_notes = api_response
-            engine_details = None
-            fault_accident = None
+            # --- Scrollable Text Container ---
+            text_frame = ttk.Frame(response_card)
+            text_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create a single frame for all content
-        frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
-        frame.pack(fill=tk.X, pady=(0, 15), padx=10)
-        screenshot_data["analysis_frame"] = frame
+            # --- Scrollbars ---
+            v_scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
+            
+            # --- Response Content with Markdown Formatting ---
+            response_content = MarkdownText(
+                text_frame,
+                wrap=tk.WORD,  # Wrap words to avoid horizontal scrolling unless necessary
+                height=20,  # Default height
+                width=70,
+                font=("Segoe UI", 10),
 
-        # Add a header with the title and timestamp
-        title_label = ttk.Label(
-            frame,
-            text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
-            font=("Arial", 10, "bold"),
-            foreground=self.colors["primary"]
-        )
-        title_label.pack(pady=(5, 0), anchor=tk.W)
+                relief=tk.FLAT,
+                padx=10,
+                pady=5,
+                yscrollcommand=v_scrollbar.set,
+            
+            )
+            
+            # Insert Markdown text
+            response_content.insert_markdown(response_text)
+            
+            response_content.config(state=tk.DISABLED)  # Make it read-only
 
-        # Create a scrolledtext widget for streaming output
-        streaming_text_widget = scrolledtext.ScrolledText(
-            frame,
-            wrap=tk.WORD,
-            width=70,
-            height=10,  # Adjust height as needed
-            font=("Arial", 11),
-            bg="white",
-            state=tk.DISABLED  # Initially read-only
-        )
-        streaming_text_widget.pack(padx=10, pady=5, fill=tk.BOTH, expand=True)
-        screenshot_data["streaming_text_widget"] = streaming_text_widget # Store the text widget # Store the text widget
-        if isinstance(api_response, str):
-            streaming_text_widget.config(state=tk.NORMAL)
-            streaming_text_widget.insert(tk.END, api_response)
-            streaming_text_widget.config(state=tk.DISABLED)
-
-        # Function to add a static section if data exists
-        def add_section(title, content):
-            if content and content.strip() and content.lower() != "null":
-                label = ttk.Label(frame, text=title, font=("Arial", 11, "bold"), foreground=self.colors["primary"])
-                label.pack(anchor=tk.W, pady=(5, 0))
-                text_label = ttk.Label(frame, text=content.replace("\n", "\n").replace(")", ")\n").strip(), font=("Arial", 10), wraplength=600, justify=tk.LEFT)
-                text_label.pack(anchor=tk.W, pady=(0, 10))
-
-        add_section("Inspector Notes:", inspector_notes)
-        add_section("Engine Details:", engine_details)
-        add_section("Fault/Accident Details:", fault_accident)
-
-        # Render the screenshot below the information
-        img = screenshot_data.get("image")
-        if img:
-            max_width = 600
-            width, height = img.size
-            ratio = min(max_width / width, 1.0)
-            new_width = int(width * ratio)
-            new_height = int(height * ratio)
-            thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-            photo = ImageTk.PhotoImage(thumbnail)
-            screenshot_data["photo"] = photo
-
-            image_label = ttk.Label(frame, image=photo)
-            image_label.image = photo
-            image_label.pack(pady=10)
-
-        # Add an "Open Image" button
-        open_button = ttk.Button(
-            frame,
-            text="Open Image",
-            command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-        )
-        open_button.pack(pady=(5, 0))
-
-        self.on_frame_configure(None)
+            # Pack elements
+            v_scrollbar.config(command=response_content.yview)
+        
+            response_content.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+            v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+            # --- Screenshot Below ---
+            img = screenshot_data.get("image")
+            if img:
+                max_width = 600
+                width, height = img.size
+                ratio = min(max_width / width, 1.0)
+                new_width = int(width * ratio)
+                new_height = int(height * ratio)
+                thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
+                photo = ImageTk.PhotoImage(thumbnail)
+                screenshot_data["photo"] = photo
+                
+                image_frame = ttk.Frame(frame, borderwidth=1, relief="solid")
+                image_frame.pack(pady=5)
+                
+                image_label = ttk.Label(image_frame, image=photo)
+                image_label.image = photo
+                image_label.pack()
+            
+            # --- Header for Open Button ---
+            title_frame = ttk.Frame(frame)
+            title_frame.pack(fill=tk.X)
+            
+            title_label = ttk.Label(
+                title_frame,
+                text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
+                font=("Arial", 10, "bold"),
+                foreground=self.colors["primary"]
+            )
+            title_label.pack(side=tk.LEFT, pady=5)
+            
+            open_button = ttk.Button(
+                title_frame,
+                text="Open Image",
+                command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
+            )
+            open_button.pack(side=tk.RIGHT, padx=5)
+            
+            self.on_frame_configure(None)
+        except Exception as e:
+            print(str(e),"add_screenshot_to_ui")
     
+      
     def strip_html_tags(self, html_text):
         """Remove HTML tags from text"""
         import re
@@ -953,23 +1030,8 @@ class ScreenshotApp:
             # For real API response, we need to parse the JSON
             formatted_data = json.loads(json.loads(response_data).get("assistant_message"))
         
-        # Format the data into a more readable structure
-        sections = []
-        
-        # Format inspector notes section
-        if formatted_data.get("inspector_notes"):
-            sections.append("Inspector Notes:\n" + formatted_data.get("inspector_notes", ""))
-        
-        # Format engine details section
-        if formatted_data.get("engine_details") and formatted_data.get("engine_details") != "null":
-            sections.append("Engine Details:\n" + formatted_data.get("engine_details", ""))
-        
-        # Format fault/accident section
-        if formatted_data.get("fault_accident"):
-            sections.append("Fault/Accident Details:\n" + formatted_data.get("fault_accident", ""))
-        
-        # Join all sections
-        full_formatted_text = "\n\n".join(sections)
+        # Format the data into the new required structure
+        full_formatted_text = self.format_api_response_new(formatted_data)
         
         # Now simulate streaming for both real and mock data
         display_text = ""
@@ -984,120 +1046,173 @@ class ScreenshotApp:
             # Simulate typing/streaming delay
             time.sleep(random.uniform(0.01, 0.05))
 
-    streaming_text_widget_global = None # Define a global variable
-
     def make_api_call(self, payload):
-        self.show_loader()
-        complete_response = ""
-        global streaming_text_widget_global
-
+        self.show_loader()  # Show loader centered on the screen
+        
         try:
+            # MOCK IMPLEMENTATION - Comment this section to use the real API
+            # mock_response = {
+            #     "engine_details": "Engine has water damage and rust on components.",  # Changed to include an issue
+            #     "fault_accident": "シートシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)",
+            #     "has_engine_issue": True,  # Set to True to test engine issue highlighting
+            #     "inspector_notes": "シントシミ (Manchas en los asientos)\nキズ有 (Tiene rasguños)\nホイール、ミラーキズ (Rayones en las ruedas y los espejos)"
+            # }
+            
+            # # Create and show the streaming display
+            # self.create_streaming_display()
+            
+            # # Process the mock response stream
+            # for text_so_far in self.stream_api_response(mock_response, is_mock=True):
+            #     self.update_streaming_display(text_so_far)
+            
+            # return mock_response
+            
+            
             url = "http://localhost:8001/v1/chat"
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
+            # Create and show the streaming display before making the API call
+            self.create_streaming_display()
+
+            # Make the API request with stream=True to get chunks as they arrive
             response = requests.post(url, json=payload, headers=headers, stream=True)
             response.raise_for_status()
 
             
-            first_chunk_received = False
+            # Process the streaming response
+            buffer = ""
+            full_response = None
+
+            # Stream the response as it comes in
             for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
-               
-                if chunk:
+                 print("came to for loop")
+                 if chunk:
                     
-                    complete_response += chunk
-                    if streaming_text_widget_global:
-                        streaming_text_widget_global.config(state=tk.NORMAL)
-                        streaming_text_widget_global.insert(tk.END, chunk)
-                        streaming_text_widget_global.see(tk.END)
-                        streaming_text_widget_global.config(state=tk.DISABLED)
-                        self.root.update_idletasks()
-                        first_chunk_received = True # Mark that we've received at least one chunk
-                else:
-                    print("no chunk")
+                    buffer += chunk
+                    
+                    try:
+                        
+                        print(buffer,"buffer")
+                        # Update the display with formatted text
+                        self.stream_to_ui(buffer)
+                        
+                        # Store the full parsed data for return
+                        full_response = buffer
+                    
+                    # Clear the buffer since we successfully parsed it
+                        
+                    except Exception as e:
+                        print(str(e))
 
-            print(complete_response, "---------------------complete response")
-            return complete_response ,True
-
-        except requests.exceptions.RequestException as e:
+            # Return the final parsed response
+            
+            return full_response
+           
+        
+        except Exception as e:
             logging.error(f"Error in API call: {str(e)}")
             self.update_status(f"API Error: {str(e)}", "error")
             return None
-
-        except Exception as e:
-            logging.error(f"An unexpected error occurred: {str(e)}")
-            self.update_status(f"An unexpected error occurred: {str(e)}", "error")
-            return None
-
+        
         finally:
-            self.hide_loader()
-            # Hide the streaming text widget after completion
-            if streaming_text_widget_global:
-                streaming_text_widget_global.pack_forget()
+            self.hide_loader()  # Hide loader when API call is complete
+            # Add a small delay before removing the streaming display to let the user see the final result
+            # self.root.after(2000, self.remove_streaming_display)
+
+
+
     def create_streaming_display(self):
-        """Create a UI element to display streaming API response"""
-        self.streaming_frame = tk.Frame(self.root, bg=self.colors["bg_light"], bd=2, relief="solid")
-        self.streaming_frame.place(relx=0.5, rely=0.5, anchor="center", width=600, height=400)
-        
-        streaming_title = ttk.Label(
-            self.streaming_frame,
-            text="Processing Image...",
-            font=("Arial", 14, "bold"),
-            foreground=self.colors["primary"],
-            background=self.colors["bg_light"]
-        )
-        streaming_title.pack(pady=(10, 5))
-        
-        self.streaming_text = scrolledtext.ScrolledText(
-            self.streaming_frame,
-            wrap=tk.WORD,
-            width=70,
-            height=20,
-            font=("Arial", 11),
-            bg="white"
-        )
-        self.streaming_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        
-        # Apply text tags for styling
-        self.streaming_text.tag_configure("section_title", font=("Arial", 12, "bold"), foreground=self.colors["primary"])
-        self.streaming_text.tag_configure("section_content", font=("Arial", 11))
-        
-        self.streaming_text.config(state=tk.DISABLED)  # Make it read-only
+        try:
+            """Create a Text widget to display streaming API response using markdown"""
+            # if not hasattr(self, 'streaming_text'):
+                # Create a frame for the streaming display
+            self.streaming_frame = ttk.Frame(self.screenshots_container)
+            self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+            
+            # Add a Text widget with markdown support
+            self.streaming_text = tk.Text(
+                self.streaming_frame,
+                wrap=tk.WORD,
+                width=70,
+                height=20,
+                font=("Arial", 11),
+                bg="white",
+                padx=10,
+                pady=10
+            )
+            self.streaming_text.pack(fill=tk.BOTH, expand=True)
+            
+            # Disable scrolling by not including a scrollbar
+            
+            # Configure text tags for styling
+            self.streaming_text.tag_configure("bold", font=("Arial", 12, "bold"))
+            self.streaming_text.tag_configure("regular", font=("Arial", 11))
+            self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+            
+            self.streaming_text.config(state=tk.DISABLED)
+        except Exception as e:
+            print(str(e),"stream create")  # Make it read-only
 
-    def update_streaming_display(self, text):
-        """Update the streaming display with the latest formatted text by appending."""
-        self.streaming_text.config(state=tk.NORMAL)  # Allow editing
 
-        # Apply formatting and styling to the new text
-        sections = text.split("\n\n")
-        for section in sections:
-            if ":" in section:
-                # Split the section into title and content
-                title_end = section.find(":")
-                title = section[:title_end+1]
-                content = section[title_end+1:]
+    def stream_to_ui(self, generator):
+        def stream():
+            try:
+                # Ensure widget exists before starting the stream
+                if not self.streaming_text or not self.streaming_text.winfo_exists():
+                    print("Streaming widget no longer exists.")
+                    return
 
-                # Insert title with styling
-                self.streaming_text.insert(tk.END, title, "section_title")
-                # Insert content with styling
-                self.streaming_text.insert(tk.END, content, "section_content")
-                self.streaming_text.insert(tk.END, "\n\n")
-            else:
-                # If no title is found, just insert the text normally
-                self.streaming_text.insert(tk.END, section, "section_content")
-                self.streaming_text.insert(tk.END, "\n\n")
+                self.streaming_text.config(state=tk.NORMAL)
+                self.streaming_text.delete(1.0, tk.END)
 
-        self.streaming_text.config(state=tk.DISABLED)  # Make it read-only again
-        self.streaming_text.see(tk.END)  # Scroll to the end
+                def update_widget(chunk):
+                    # Check if the widget exists before updating
+                    if not self.streaming_text.winfo_exists():
+                        print("Streaming widget destroyed mid-stream.")
+                        return
+                    self.streaming_text.insert(tk.END, chunk)
+                    self.streaming_text.see(tk.END)
+                    self.streaming_text.update_idletasks()
 
-        # Update the UI immediately
-        self.root.update_idletasks()
+                # Start streaming content from generator
+                for chunk in generator:
+                    if not self.streaming_text.winfo_exists():
+                        print("Streaming widget destroyed mid-stream.")
+                        return
+                    
+                    # Schedule the update to the main thread
+                    if self.is_streaming:
+                        self.parent_frame.after(0, update_widget, chunk)
+                    time.sleep(0.05)
+
+                self.streaming_text.config(state=tk.DISABLED)
+
+            except Exception as e:
+                print(f"Streaming error: {e}")
+
+        if not self.is_streaming:  # If a stream is not already running
+            self.is_streaming = True
+            threading.Thread(target=stream, daemon=True).start()
+
+    def create_streaming_display(self):
+        # Destroy the previous widget if it exists
+        if self.streaming_text and self.streaming_text.winfo_exists():
+            self.streaming_text.destroy()
+
+        # Create a new text widget for streaming
+        self.streaming_text = tk.Text(self.parent_frame, wrap="word", height=20)
+        self.streaming_text.pack(fill="both", expand=True)
+        self.streaming_text.tag_configure("bold", font=("Arial", 10, "bold"))
+        self.streaming_text.tag_configure("engine_issue", foreground="red", font=("Arial", 10, "bold"))
+
     def remove_streaming_display(self):
         """Remove the streaming display from the UI"""
-        if hasattr(self, 'streaming_frame'):
-            self.streaming_frame.place_forget()
+        if self.streaming_text and self.streaming_text.winfo_exists():
+            self.streaming_text.destroy()
+        self.is_streaming = False  # Stop the streaming process if widget is destroyed
 
 if __name__ == "__main__":
     root = tk.Tk()
