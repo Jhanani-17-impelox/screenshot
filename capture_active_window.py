@@ -17,6 +17,9 @@ import requests
 import re
 from itertools import cycle
 import logging
+import webbrowser
+import subprocess
+
 
 # Configure logging
 logging.basicConfig(
