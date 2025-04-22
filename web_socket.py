@@ -12,13 +12,10 @@ from io import BytesIO
 from datetime import datetime
 import json
 import uuid
-import requests
 import re
 from itertools import cycle
 import logging
-import subprocess
 import asyncio
-import aiohttp
 import socketio  # This is the standard import
 
 # Configure logging
@@ -31,9 +28,6 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger(__name__)
 
-# Add these imports at the top of your file
-import webbrowser
-from tkhtmlview import HTMLLabel, HTMLScrolledText, RenderHTML
 
 
 class DisplayTextManager:
@@ -93,7 +87,7 @@ def parse_engine_issue(markdown_text):
     
     return False, None
 
-def animate_analyzing_label(label):
+
     """Animate the analyzing label with moving dots"""
     current_text = label.cget("text").rstrip('.')
     dot_count = (label.cget("text").count('.') + 1) % 4
@@ -101,49 +95,6 @@ def animate_analyzing_label(label):
     
     # Return True to keep the animation running
     return True
-
-def update_streaming_layout(parent, text_manager, index):
-    """Update the entire streaming layout with the latest text"""
-    # Get the current text
-    current_text = text_manager.get_text(index)
-    
-    # Update the markdown display
-    if hasattr(parent, 'markdown_text'):
-        parent.markdown_text.config(state=tk.NORMAL)
-        parent.markdown_text.delete(1.0, tk.END)
-        
-        # Process the text with enhanced markdown formatting
-        has_engine_issue, engine_text = parse_engine_issue(current_text)
-        
-        if has_engine_issue:
-            # Split by the engine issue marker
-            parts = current_text.split("<<<**Engine Description:**>>>")
-            
-            # Insert the first part normally
-            parent.markdown_text.insert_markdown(parts[0])
-            
-            # Insert the engine issue marker in red
-            parent.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
-            
-            # Find where the next section begins
-            next_section = re.search(r'\n\n\*\*', parts[1])
-            
-            if next_section:
-                # Insert engine details in red
-                engine_details = parts[1][:next_section.start()]
-                parent.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
-                
-                # Insert the rest of the text normally
-                remaining_text = parts[1][next_section.start():]
-                parent.markdown_text.insert_markdown(remaining_text)
-            else:
-                # Just insert the engine part in red
-                parent.markdown_text.insert(tk.END, parts[1].strip(), "engine_issue")
-        else:
-            # No engine issue, just insert the whole text
-            parent.markdown_text.insert_markdown(current_text)
-        
-        parent.markdown_text.config(state=tk.DISABLED)
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
     def __init__(self, *args, **kwargs):
@@ -407,27 +358,6 @@ class ScreenshotApp:
             self.update_status("Socket.IO communication error", "error")
             return None
 
-    async def handle_response(self, data):
-        """Handle Socket.IO response asynchronously"""
-        try:
-            if isinstance(data, str):
-                data = json.loads(data)
-            
-            logging.info(f"Processing response data: {data}")
-            
-            # Update UI with response
-            self.root.after(0, lambda: self.update_status("Processing response...", "info"))
-            
-            # Create streaming display if needed
-            self.root.after(0, self.create_streaming_display)
-            
-            # Update the display with response text
-            if "assistant_message" in data:
-                self.root.after(0, lambda: self.update_streaming_display(data["assistant_message"]))
-                
-        except Exception as e:
-            logging.error(f"Error handling response: {str(e)}")
-            self.root.after(0, lambda: self.update_status("Error processing response", "error"))
 
     def configure_styles(self):
         style = ttk.Style()
@@ -462,20 +392,6 @@ class ScreenshotApp:
                         background=self.colors["bg_light"],
                         foreground=self.colors["primary"])
 
-    def save_payload_to_file(self, payload):
-        """Save the payload to a JSON file in the script directory"""
-        try:
-            with open(self.payload_file, 'w') as f:
-                json.dump(payload, f, indent=2)
-            self.update_status(f"Payload saved to {self.payload_file}", "success")
-        except Exception as e:
-            logging.error(f"Error saving payload: {str(e)}") 
-            self.log_error({
-  "occured_while": "save_payload_to_file",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
-            self.update_status(f"Error saving payload: {str(e)}", "error")
 
     def setup_icon(self):
         try:
@@ -1001,29 +917,6 @@ class ScreenshotApp:
             background=bg_color,
             foreground=fg_color
         )
-        def parse_markdown_response(self, markdown_text):
-            """Parse the markdown response into structured data for storage"""
-            structured_data = {
-                "inspector_notes": "",
-                "engine_details": "",
-                "fault_accident": "",
-                "has_engine_issue": False
-            }
-            
-            inspector_match = re.search(r'\*\*Inspector Notes:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
-            if inspector_match:
-                structured_data["inspector_notes"] = inspector_match.group(1).strip()
-            
-            engine_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
-            if engine_match:
-                structured_data["engine_details"] = engine_match.group(1).strip()
-                structured_data["has_engine_issue"] = True
-            
-            fault_match = re.search(r'\*\*Faults, Precautions, or Accident Information:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
-            if fault_match:
-                structured_data["fault_accident"] = fault_match.group(1).strip()
-            
-            return structured_data
 
 
     def add_screenshot_to_ui(self, index, screenshot_data):
@@ -1112,67 +1005,6 @@ class ScreenshotApp:
 
 
     
-    def create_tables_from_html(self, parent_frame, html_content):
-        """Parse full HTML (with <thead> and <tbody>) and render Tkinter tables"""
-        import re
-        from html import unescape
-
-        sections = re.findall(r'<h3>(.*?)</h3>\s*<table.*?>(.*?)</table>', html_content, re.DOTALL)
-
-        for heading, table_html in sections:
-            heading_label = ttk.Label(
-                parent_frame,
-                text=unescape(heading),
-                font=("Arial", 12, "bold"),
-                foreground=self.colors["primary"],
-                background="white",
-                padding=8
-            )
-            heading_label.pack(fill=tk.X, pady=(10, 0))
-
-            table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
-            table_frame.pack(fill=tk.X, pady=(5, 10))
-
-            headers = re.findall(r'<th>(.*?)</th>', table_html, re.DOTALL)
-
-            row_matches = re.findall(r'<tr>(.*?)</tr>', table_html, re.DOTALL)
-            rows = []
-            for row_html in row_matches:
-                if '<th>' in row_html:
-                    continue
-                cells = re.findall(r'<td>(.*?)</td>', row_html, re.DOTALL)
-                rows.append(cells)
-
-            for i, header in enumerate(headers):
-                header_label = ttk.Label(
-                    table_frame,
-                    text=unescape(header.strip()),
-                    font=("Arial", 10, "bold"),
-                    foreground=self.colors["primary"],
-                    background="white",
-                    borderwidth=1,
-                    relief="solid",
-                    padding=8,
-                    anchor="w"
-                )
-                header_label.grid(row=0, column=i, sticky="nsew")
-                table_frame.columnconfigure(i, weight=1)
-
-            for i, row in enumerate(rows):
-                for j, cell in enumerate(row):
-                    cell_text = unescape(cell.replace('<br>', '\n'))
-                    cell_text = self.strip_html_tags(cell_text)
-
-                    cell_label = ttk.Label(
-                        table_frame,
-                        text=cell_text,
-                        borderwidth=1,
-                        relief="solid",
-                        padding=8,
-                        background="white",
-                        anchor="w"
-                    )
-                    cell_label.grid(row=i + 1, column=j, sticky="nsew")
 
     def open_screenshot(self, path):
         try:
@@ -1219,91 +1051,8 @@ class ScreenshotApp:
         self.main_loop.close()
         self.root.destroy()
 
-    def stream_api_response(self, response_data, is_mock=False):
-        """
-        Generator function that yields chunks of a formatted API response.
-        Works with both real API responses and mock responses.
-        """
-        import time
-        import random
-        
-        if is_mock:
-            full_formatted_text = response_data
-        else:
-            try:
-                parsed_data = json.loads(response_data)
-                full_formatted_text = parsed_data.get("assistant_message", "")
-            except json.JSONDecodeError:
-                full_formatted_text = response_data
-        
-        display_text = ""
-        chars = list(full_formatted_text)
-        
-        for char in chars:
-            display_text += char
-            yield display_text
-            time.sleep(random.uniform(0.01, 0.03))
 
-    def run_async(self, coro):
-        """Run an async function from a non-async context with thread-specific event loops"""
-        thread_id = threading.get_ident()
-        
-        if thread_id not in self.thread_loops:
-            # Create new event loop for this thread
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            self.thread_loops[thread_id] = loop
-        else:
-            # Use existing loop for this thread
-            loop = self.thread_loops[thread_id]
-            
-        try:
-            return loop.run_until_complete(coro)
-        except RuntimeError as e:
-            # If loop is closed, create new one
-            if "Event loop is closed" in str(e):
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                self.thread_loops[thread_id] = loop
-                return loop.run_until_complete(coro)
-            raise
 
-     
-    
-    def make_api_call(self, payload):
-        try:
-            # Use the main event loop for Socket.IO communication
-            response = self.main_loop.run_until_complete(self.send_to_socketio(payload))
-            print(response)
-            
-            if response:
-                # Log the raw response for debugging
-                logging.debug(f"Raw response: {response}")
-                
-                # Extract assistant message
-                message = response.get("assistant_message", "")
-                if message:
-                    structured_response = self.parse_markdown_response(message)
-                    return structured_response
-                else:
-                    logging.error("No assistant_message in response")
-                    self.update_status("Invalid response format", "error")
-            
-            return None
-
-        except Exception as e:
-            logging.error(f"Error in Socket.IO communication: {str(e)}")
-            self.log_error({
-                "occurred_while": "Socket.IO communication",
-                "error_message": str(e),
-                "occurred_in": "front-end"
-            })
-            self.update_status(f"Socket.IO Error: {str(e)}", "error")
-            return None
-        
-        finally:
-            self.request_start_time = None  # Reset timer
-            self.root.after(1000, self.remove_streaming_display)
 
     def log_error(self, payload):
         try:
@@ -1339,89 +1088,9 @@ class ScreenshotApp:
             structured_data["fault_accident"] = fault_match.group(1).strip()
         
         return structured_data
+    
 
 
-    def create_streaming_display(self):
-        self.remove_streaming_display()
-        
-        self.streaming_frame = ttk.Frame(self.screenshots_container)
-        self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        
-        self.markdown_text = MarkdownText(
-            self.streaming_frame,
-            wrap=tk.WORD,
-            width=70,
-            height=20,
-            font=("Arial", 11),
-            bg="white",
-            padx=10,
-            pady=10
-        )
-        self.markdown_text.pack(fill=tk.BOTH, expand=True)
-        
-        self.markdown_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
-        
-        self.markdown_text.config(state=tk.DISABLED)
-        
-        self.analyzing_label = ttk.Label(
-            self.streaming_frame,
-            text="Analyzing screenshot...",
-            font=("Arial", 10, "italic"),
-            foreground=self.colors["primary"]
-        )
-        self.analyzing_label.pack(pady=(0, 5))
-
-        self.root.update_idletasks()
-
-
-
-
-    def update_streaming_display(self, text):
-        if not hasattr(self, 'streaming_frame'):
-            self.create_streaming_display()
-        
-        self.markdown_text.config(state=tk.NORMAL)
-        
-        self.markdown_text.delete(1.0, tk.END)
-        
-        has_engine_issue = "<<<**Engine Description:**>>>" in text
-        
-        if has_engine_issue:
-            parts = text.split("<<<**Engine Description:**>>>")
-            
-            self.markdown_text.insert_markdown(parts[0])
-            
-            self.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
-            
-            engine_text = parts[1]
-            next_section = re.search(r'\n\n\*\*', engine_text)
-            
-            if next_section:
-                engine_details = engine_text[:next_section.start()]
-                self.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
-                
-                remaining_text = engine_text[next_section.start():]
-                self.markdown_text.insert_markdown(remaining_text)
-            else:
-                self.markdown_text.insert(tk.END, engine_text.strip(), "engine_issue")
-        else:
-            self.markdown_text.insert_markdown(text)
-        
-        self.markdown_text.config(state=tk.DISABLED)
-        
-        dots = "." * (int(time.time() * 2) % 4)
-        self.analyzing_label.config(text=f"Analyzing screenshot{dots}")
-
-    def remove_streaming_display(self):
-        if hasattr(self, 'streaming_frame'):
-            self.streaming_frame.destroy()
-            self.root.update_idletasks()
-            if hasattr(self, 'streaming_frame'):
-                delattr(self, 'streaming_frame')
-            if hasattr(self, 'markdown_text'):
-                delattr(self, 'markdown_text')
-            if hasattr(self, 'analyzing_label'):
-                delattr(self, 'analyzing_label')
 
     def get_thread_loop(self):
         """Get or create event loop for current thread"""
