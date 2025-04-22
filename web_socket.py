@@ -227,6 +227,7 @@ class MarkdownText(tk.Text):
 class ScreenshotApp:
     def __init__(self, root):
         self.root = root
+        self.is_connected = False  # Add connection state attribute
         self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
@@ -292,15 +293,20 @@ class ScreenshotApp:
         @self.sio.event
         async def connect():
             logging.info("Connected to server")
-            self.update_status("Socket.IO connected", "success")
+            self.is_connected = True
+            self.update_status("Ready to take screenshot", "success")
+            # Start ping/pong after connection
+            await self.sio.emit('ping', 'Initial ping')
 
         @self.sio.event
         async def connect_error(data):
             logging.error(f"Connection failed: {data}")
+            self.is_connected = False
             self.update_status("Socket.IO connection failed", "error")
 
         @self.sio.event
         async def disconnect():
+            self.is_connected = False
             logging.info("Disconnected from server")
             self.update_status("Socket.IO disconnected", "info")
                 
@@ -311,14 +317,24 @@ class ScreenshotApp:
             # Handle response asynchronously
             await self.handle_response(data)
 
+        @self.sio.on('pong')
+        async def on_pong(data):
+            if not self.is_connected:
+                self.is_connected = True
+                logging.info("Connection re-established via pong")
+            await asyncio.sleep(2)  # Wait 2 seconds before next ping
+            await self.sio.emit('ping', 'Ping from client')
+
     async def connect_socketio(self):
         """Establish Socket.IO connection"""
         try:
-            await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
-            # Remove the wait() call as it blocks indefinitely
+            if not self.is_connected:
+                await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
+                self.is_connected = True
             return True
         except Exception as e:
             logging.error(f"Socket.IO connection failed: {str(e)}")
+            self.is_connected = False
             self.update_status("Socket.IO connection failed", "error")
             return False
 
@@ -993,7 +1009,9 @@ class ScreenshotApp:
         markdown_display.config(state=tk.DISABLED)
 
         self.on_frame_configure(None)
-
+        children = self.screenshots_container.winfo_children()
+        # if len(children) > 10:
+        #     children[0].destroy()
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
 

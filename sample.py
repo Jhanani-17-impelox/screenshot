@@ -294,7 +294,7 @@ class ScreenshotApp:
         async def connect():
             logging.info("Connected to server")
             self.is_connected = True
-            self.update_status("Socket.IO connected", "success")
+            self.update_status("Ready to take screenshot", "success")
             # Start ping/pong after connection
             await self.sio.emit('ping', 'Initial ping')
 
