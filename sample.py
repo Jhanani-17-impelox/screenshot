@@ -1009,7 +1009,9 @@ class ScreenshotApp:
         markdown_display.config(state=tk.DISABLED)
 
         self.on_frame_configure(None)
-
+        children = self.screenshots_container.winfo_children()
+        if len(children) > 10:
+            children[0].destroy()
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
