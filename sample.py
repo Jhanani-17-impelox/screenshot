@@ -292,6 +292,7 @@ class ScreenshotApp:
         @self.sio.event
         async def connect():
             logging.info("Connected to server")
+            is_connected = True
             self.update_status("Socket.IO connected", "success")
 
         @self.sio.event
@@ -301,6 +302,7 @@ class ScreenshotApp:
 
         @self.sio.event
         async def disconnect():
+            is_connected = False
             logging.info("Disconnected from server")
             self.update_status("Socket.IO disconnected", "info")
                 
@@ -310,12 +312,28 @@ class ScreenshotApp:
             logging.info(data)
             # Handle response asynchronously
             await self.handle_response(data)
+        @self.sio.on('pong')
+        def on_pong(data):
+            print(f"[Client] Server responded with: {data}")
+            print("[Client] Sending another ping in 2 seconds...")
+            self.sio.emit('ping', 'Another ping from Python client!')
+
+        try:
+            if not is_connected:
+                
+                self.sio.connect('ws://localhost:8001/gemini') 
+                is_connected = True# Ensure this matches your server address
+                self.sio.wait()
+        except socketio.exceptions.ConnectionError as e:
+            print(f"[Client] Connection error: {e}")
+            
 
     async def connect_socketio(self):
         """Establish Socket.IO connection"""
         try:
             await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
             # Remove the wait() call as it blocks indefinitely
+            is_connected = True
             return True
         except Exception as e:
             logging.error(f"Socket.IO connection failed: {str(e)}")
@@ -1005,6 +1023,67 @@ class ScreenshotApp:
 
 
     
+    def create_tables_from_html(self, parent_frame, html_content):
+        """Parse full HTML (with <thead> and <tbody>) and render Tkinter tables"""
+        import re
+        from html import unescape
+
+        sections = re.findall(r'<h3>(.*?)</h3>\s*<table.*?>(.*?)</table>', html_content, re.DOTALL)
+
+        for heading, table_html in sections:
+            heading_label = ttk.Label(
+                parent_frame,
+                text=unescape(heading),
+                font=("Arial", 12, "bold"),
+                foreground=self.colors["primary"],
+                background="white",
+                padding=8
+            )
+            heading_label.pack(fill=tk.X, pady=(10, 0))
+
+            table_frame = ttk.Frame(parent_frame, relief="solid", borderwidth=1)
+            table_frame.pack(fill=tk.X, pady=(5, 10))
+
+            headers = re.findall(r'<th>(.*?)</th>', table_html, re.DOTALL)
+
+            row_matches = re.findall(r'<tr>(.*?)</tr>', table_html, re.DOTALL)
+            rows = []
+            for row_html in row_matches:
+                if '<th>' in row_html:
+                    continue
+                cells = re.findall(r'<td>(.*?)</td>', row_html, re.DOTALL)
+                rows.append(cells)
+
+            for i, header in enumerate(headers):
+                header_label = ttk.Label(
+                    table_frame,
+                    text=unescape(header.strip()),
+                    font=("Arial", 10, "bold"),
+                    foreground=self.colors["primary"],
+                    background="white",
+                    borderwidth=1,
+                    relief="solid",
+                    padding=8,
+                    anchor="w"
+                )
+                header_label.grid(row=0, column=i, sticky="nsew")
+                table_frame.columnconfigure(i, weight=1)
+
+            for i, row in enumerate(rows):
+                for j, cell in enumerate(row):
+                    cell_text = unescape(cell.replace('<br>', '\n'))
+                    cell_text = self.strip_html_tags(cell_text)
+
+                    cell_label = ttk.Label(
+                        table_frame,
+                        text=cell_text,
+                        borderwidth=1,
+                        relief="solid",
+                        padding=8,
+                        background="white",
+                        anchor="w"
+                    )
+                    cell_label.grid(row=i + 1, column=j, sticky="nsew")
 
     def open_screenshot(self, path):
         try:
@@ -1084,33 +1163,105 @@ class ScreenshotApp:
             structured_data["has_engine_issue"] = True
         
         fault_match = re.search(r'\*\*Faults, Precautions, or Accident Information:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
-        try:
+        if fault_match:
             structured_data["fault_accident"] = fault_match.group(1).strip()
-        except AttributeError:
-            structured_data["fault_accident"] = ""
-        except Exception as e:
-            logging.error(f"Error parsing fault information: {str(e)}")
-            structured_data["fault_accident"] = ""
         
         return structured_data
     
+
+    def create_streaming_display(self):
+        self.remove_streaming_display()
+        
+        self.streaming_frame = ttk.Frame(self.screenshots_container)
+        self.streaming_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        
+        self.markdown_text = MarkdownText(
+            self.streaming_frame,
+            wrap=tk.WORD,
+            width=70,
+            height=20,
+            font=("Arial", 11),
+            bg="white",
+            padx=10,
+            pady=10
+        )
+        self.markdown_text.pack(fill=tk.BOTH, expand=True)
+        
+        self.markdown_text.tag_configure("engine_issue", foreground="red", font=("Arial", 12, "bold"))
+        
+        self.markdown_text.config(state=tk.DISABLED)
+        
+        self.analyzing_label = ttk.Label(
+            self.streaming_frame,
+            text="Analyzing screenshot...",
+            font=("Arial", 10, "italic"),
+            foreground=self.colors["primary"]
+        )
+        self.analyzing_label.pack(pady=(0, 5))
+
+        self.root.update_idletasks()
+
+
+
+
+    def update_streaming_display(self, text):
+        if not hasattr(self, 'streaming_frame'):
+            self.create_streaming_display()
+        
+        self.markdown_text.config(state=tk.NORMAL)
+        
+        self.markdown_text.delete(1.0, tk.END)
+        
+        has_engine_issue = "<<<**Engine Description:**>>>" in text
+        
+        if has_engine_issue:
+            parts = text.split("<<<**Engine Description:**>>>")
+            
+            self.markdown_text.insert_markdown(parts[0])
+            
+            self.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
+            
+            engine_text = parts[1]
+            next_section = re.search(r'\n\n\*\*', engine_text)
+            
+            if next_section:
+                engine_details = engine_text[:next_section.start()]
+                self.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
+                
+                remaining_text = engine_text[next_section.start():]
+                self.markdown_text.insert_markdown(remaining_text)
+            else:
+                self.markdown_text.insert(tk.END, engine_text.strip(), "engine_issue")
+        else:
+            self.markdown_text.insert_markdown(text)
+        
+        self.markdown_text.config(state=tk.DISABLED)
+        
+        dots = "." * (int(time.time() * 2) % 4)
+        self.analyzing_label.config(text=f"Analyzing screenshot{dots}")
+
+    def remove_streaming_display(self):
+        if hasattr(self, 'streaming_frame'):
+            self.streaming_frame.destroy()
+            self.root.update_idletasks()
+            if hasattr(self, 'streaming_frame'):
+                delattr(self, 'streaming_frame')
+            if hasattr(self, 'markdown_text'):
+                delattr(self, 'markdown_text')
+            if hasattr(self, 'analyzing_label'):
+                delattr(self, 'analyzing_label')
+
     def get_thread_loop(self):
-        try:
-            thread_id = threading.get_ident()
-            if thread_id not in self.thread_loops:
-                loop = asyncio.new_event_loop()
-                self.thread_loops[thread_id] = loop
-                asyncio.set_event_loop(loop)
-            return self.thread_loops[thread_id]
-        except Exception as e:
-            logging.error(f"Error creating thread loop: {str(e)}")
-            raise RuntimeError(f"Failed to create or get thread loop: {str(e)}")
+        """Get or create event loop for current thread"""
+        thread_id = threading.get_ident()
+        if thread_id not in self.thread_loops:
+            loop = asyncio.new_event_loop()
+            self.thread_loops[thread_id] = loop
+            asyncio.set_event_loop(loop)
+        return self.thread_loops[thread_id]
 
 if __name__ == "__main__":
-    try:
-        root = tk.Tk()
-        app = ScreenshotApp(root)
-        root.mainloop()
-    except Exception as e:
-        logging.critical(f"Application failed to start: {str(e)}")
-        raise
+    root = tk.Tk()
+    is_connected = False
+    app = ScreenshotApp(root)
+    root.mainloop()
