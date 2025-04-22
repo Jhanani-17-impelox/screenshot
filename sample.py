@@ -857,7 +857,7 @@ class ScreenshotApp:
             }
             # Replace direct emit with async call through main loop
             result= self.main_loop.run_until_complete(self.send_to_socketio(payload_json))
-            structured_response = self.parse_markdown_response(result)
+            # structured_response = self.parse_markdown_response(result)
             
 
             if result is None:
@@ -868,9 +868,9 @@ class ScreenshotApp:
                 "title": window_title,
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
                 "path": file_path,
-                "base64": img_str_raw,
-                "payload_json": payload_json,
-                "api_response": structured_response
+                # "base64": img_str_raw,
+                # "payload_json": payload_json,
+                "api_response": result
             }
             self.screenshots.insert(0, new_screenshot_data)
 
@@ -936,17 +936,25 @@ class ScreenshotApp:
 
 
     def add_screenshot_to_ui(self, index, screenshot_data):
-        print(len(self.screenshots))
+        print(len(self.screenshots),self.screenshots[-1])       
+        if len(self.screenshots) > 3:
+                self.screenshots=self.screenshots[:-1]
         if len(self.screenshots) % 2 == 0:
             bg=self.colors["bg_light"]
         else:   
             bg=self.colors["bg_dark"]
         
-        api_response = screenshot_data.get("api_response", {})
-        inspector_notes = api_response.get("inspector_notes")
-        engine_details = api_response.get("engine_details")
-        fault_accident = api_response.get("fault_accident")
-        has_engine_issue = api_response.get("has_engine_issue", False)
+        full_text = screenshot_data.get("api_response", "")
+        has_engine_issue = "<<<**Engine Description:**>>>" in full_text
+
+        # Use regex to extract each section
+        inspector_match = re.search(r"\*\*Inspector Notes:\*\*\s*\n(.*?)(?=(<<<\*\*Engine Description:\*\*>>>|\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+        engine_match = re.search(r"<<<\*\*Engine Description:\*\*>>>\s*\n(.*?)(?=(\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+        faults_match = re.search(r"\*\*Faults, Precautions, or Accident Information:\*\*\s*\n(.*)", full_text, re.DOTALL)
+
+        inspector_notes = inspector_match.group(1).strip() if inspector_match else ""
+        engine_details = engine_match.group(1).strip() if engine_match else ""
+        fault_accident = faults_match.group(1).strip() if faults_match else ""
         img = screenshot_data.get("image")
 
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
@@ -985,6 +993,8 @@ class ScreenshotApp:
 
         if fault_accident and fault_accident.strip():
             markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
+        if not inspector_notes and not engine_details and not fault_accident:
+            markdown_content += f"{full_text}\n\n"
 
         markdown_display.config(state=tk.NORMAL)
 
@@ -1008,10 +1018,9 @@ class ScreenshotApp:
 
         markdown_display.config(state=tk.DISABLED)
 
-        self.on_frame_configure(None)
-        children = self.screenshots_container.winfo_children()
-        if len(children) > 10:
-            children[0].destroy()
+        
+        
+
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
