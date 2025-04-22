@@ -17,9 +17,9 @@ import re
 from itertools import cycle
 import logging
 import subprocess
-import websockets
 import asyncio
-
+import aiohttp
+import socketio  # This is the standard import
 
 # Configure logging
 logging.basicConfig(
@@ -317,10 +317,9 @@ class ScreenshotApp:
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Initialize WebSocket with proper event loop handling
-        self.ws = None
-        self.ws_url = "ws://localhost:8000"
-        self.thread_loops = {}
+        # Replace WebSocket initialization with Socket.IO
+        self.sio = socketio.AsyncClient()
+        self.setup_socketio_events()
         
         # Create and set the main event loop
         if platform.system() == 'Windows':
@@ -330,62 +329,105 @@ class ScreenshotApp:
         asyncio.set_event_loop(self.main_loop)
         
         try:
-            self.main_loop.run_until_complete(self.connect_websocket())
+            self.main_loop.run_until_complete(self.connect_socketio())
         except Exception as e:
-            logging.error(f"WebSocket setup error: {str(e)}")
-            self.update_status("WebSocket setup failed", "error")
+            logging.error(f"Socket.IO setup error: {str(e)}")
+            self.update_status("Socket.IO setup failed", "error")
 
         self.request_start_time = None  # Add this line after other self.* declarations
+        self.thread_loops = {}  # Add this line to initialize thread_loops dictionary
 
-    async def connect_websocket(self):
-        """Establish WebSocket connection"""
-        try:
-            # Create connection in the current event loop
-            self.ws = await websockets.connect(
-                self.ws_url,
-                ping_interval=None,
-                ping_timeout=None
-            )
-            logging.info("WebSocket connection established")
-            self.update_status("WebSocket connected", "success")
-        except Exception as e:
-            logging.error(f"WebSocket connection failed: {str(e)}")
-            self.update_status("WebSocket connection failed", "error")
-            raise
+    def setup_socketio_events(self):
+        @self.sio.event
+        async def connect():
+            logging.info("Connected to server")
+            self.update_status("Socket.IO connected", "success")
 
-    async def send_to_websocket(self, payload):
-        """Send data through WebSocket connection"""
-        if not self.ws:
-            await self.connect_websocket()
-        
-        try:
-            # Ensure proper JSON formatting like the JavaScript example
-            await self.ws.send(json.dumps(payload))
-            
-            # Wait for and process response
-            response = await self.ws.recv()
-            
-            # Calculate elapsed time
-            if self.request_start_time:
-                elapsed_time = (time.time() - self.request_start_time) * 1000  # ms
-                self.update_status(f"Response received in {elapsed_time:.0f}ms", "success")
-            
-            try:
-                parsed_response = json.loads(response)
-                logging.info(f"Response received in {elapsed_time:.0f}ms: {parsed_response}")
-                return parsed_response
-            except json.JSONDecodeError as e:
-                logging.error(f"Failed to parse response: {response}")
-                return {"assistant_message": str(response)}
+        @self.sio.event
+        async def connect_error(data):
+            logging.error(f"Connection failed: {data}")
+            self.update_status("Socket.IO connection failed", "error")
+
+        @self.sio.event
+        async def disconnect():
+            logging.info("Disconnected from server")
+            self.update_status("Socket.IO disconnected", "info")
                 
-        except websockets.exceptions.ConnectionClosed:
-            logging.error("WebSocket connection closed unexpectedly")
-            await self.connect_websocket()
-            return None
+        @self.sio.on("payload_response")
+        async def on_payload_response(data):
+            logging.info("📦 Received response from server")
+            logging.info(data)
+            # Handle response asynchronously
+            await self.handle_response(data)
+
+    async def connect_socketio(self):
+        """Establish Socket.IO connection"""
+        try:
+            await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
+            # Remove the wait() call as it blocks indefinitely
+            return True
         except Exception as e:
-            logging.error(f"WebSocket communication error: {str(e)}")
-            self.update_status("WebSocket communication error", "error")
+            logging.error(f"Socket.IO connection failed: {str(e)}")
+            self.update_status("Socket.IO connection failed", "error")
+            return False
+
+    async def send_to_socketio(self, payload):
+        """Send data through Socket.IO connection"""
+        try:
+            if not self.sio.connected:
+                await self.connect_socketio()
+            
+            # Create a future to store the response
+            response_future = asyncio.Future()
+            
+            @self.sio.on('gemini_response')
+            def on_response(data):
+                logging.info(f"Received response from server: {data}")
+                if not response_future.done():
+                    response_future.set_result(data)
+            
+            # Emit the request
+            await self.sio.emit('geminiRequest', payload)
+            
+            # Wait for response with timeout
+            try:
+                response = await asyncio.wait_for(response_future, timeout=30.0)
+                logging.info(f"Processing response: {response}")
+                return response
+            except asyncio.TimeoutError:
+                logging.error("Socket.IO response timeout")
+                self.update_status("Response timeout", "error")
+                return None
+            # finally:
+            #     # Remove the temporary event handler
+            #     self.sio.off('gemini_response', on_response)
+                
+        except Exception as e:
+            logging.error(f"Socket.IO communication error: {str(e)}")
+            self.update_status("Socket.IO communication error", "error")
             return None
+
+    async def handle_response(self, data):
+        """Handle Socket.IO response asynchronously"""
+        try:
+            if isinstance(data, str):
+                data = json.loads(data)
+            
+            logging.info(f"Processing response data: {data}")
+            
+            # Update UI with response
+            self.root.after(0, lambda: self.update_status("Processing response...", "info"))
+            
+            # Create streaming display if needed
+            self.root.after(0, self.create_streaming_display)
+            
+            # Update the display with response text
+            if "assistant_message" in data:
+                self.root.after(0, lambda: self.update_streaming_display(data["assistant_message"]))
+                
+        except Exception as e:
+            logging.error(f"Error handling response: {str(e)}")
+            self.root.after(0, lambda: self.update_status("Error processing response", "error"))
 
     def configure_styles(self):
         style = ttk.Style()
@@ -877,32 +919,14 @@ class ScreenshotApp:
             session_id = str(uuid.uuid4())
             self.update_status("Analyzing screenshot...", "analyzing")
 
-            # payload_json = {
-            #     "session_id": session_id,
-            #     "user_message": {
-            #         "type": "image",
-            #         "image": [img_str_raw],
-            #     },
-            #     "conversation_history": [
-            #         {
-            #             "role": "user",
-            #             "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
-            #             "attachments": [
-            #                 {
-            #                     "type": "file",
-            #                     "base64String": [img_str_raw]
-            #                 }
-            #             ]
-            #         }
-            #     ]
-            # }
-
-
             payload_json = {
-  "message": "Get the required information from the image",
-  "image": img_str_raw 
-}
-            result = self.make_api_call(payload_json)
+                "message": "Get the required information from the image",
+                "image": img_str_raw 
+            }
+            # Replace direct emit with async call through main loop
+            result= self.main_loop.run_until_complete(self.send_to_socketio(payload_json))
+            structured_response = self.parse_markdown_response(result)
+            
 
             if result is None:
                 return
@@ -914,7 +938,7 @@ class ScreenshotApp:
                 "path": file_path,
                 "base64": img_str_raw,
                 "payload_json": payload_json,
-                "api_response": result
+                "api_response": structured_response
             }
             self.screenshots.insert(0, new_screenshot_data)
 
@@ -925,10 +949,10 @@ class ScreenshotApp:
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
             self.log_error({
-  "occured_while": "capture_active_window",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
+                "occured_while": "capture_active_window",
+                "error_message": str(e),
+                "occured_in": "front-end"
+            })
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
 
         finally:
@@ -977,6 +1001,30 @@ class ScreenshotApp:
             background=bg_color,
             foreground=fg_color
         )
+        def parse_markdown_response(self, markdown_text):
+            """Parse the markdown response into structured data for storage"""
+            structured_data = {
+                "inspector_notes": "",
+                "engine_details": "",
+                "fault_accident": "",
+                "has_engine_issue": False
+            }
+            
+            inspector_match = re.search(r'\*\*Inspector Notes:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+            if inspector_match:
+                structured_data["inspector_notes"] = inspector_match.group(1).strip()
+            
+            engine_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+            if engine_match:
+                structured_data["engine_details"] = engine_match.group(1).strip()
+                structured_data["has_engine_issue"] = True
+            
+            fault_match = re.search(r'\*\*Faults, Precautions, or Accident Information:\*\*(.*?)(?=\n\n\*\*|\Z)', markdown_text, re.DOTALL)
+            if fault_match:
+                structured_data["fault_accident"] = fault_match.group(1).strip()
+            
+            return structured_data
+
 
     def add_screenshot_to_ui(self, index, screenshot_data):
         print(len(self.screenshots))
@@ -995,20 +1043,6 @@ class ScreenshotApp:
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10, side=tk.TOP)
 
-        # if img:
-        #     max_width = 600
-        #     width, height = img.size
-        #     ratio = min(max_width / width, 1.0)
-        #     new_width = int(width * ratio)
-        #     new_height = int(height * ratio)
-        #     thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-        #     photo = ImageTk.PhotoImage(thumbnail)
-        #     screenshot_data["photo"] = photo
-
-            # image_label = ttk.Label(frame, image=photo)
-            # image_label.image = photo
-            # image_label.pack(pady=(0, 10))
-
         title_label = ttk.Label(
             frame,
             text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
@@ -1016,12 +1050,6 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         title_label.pack(pady=(5, 0))
-        # open_button = ttk.Button(
-        #     frame,
-        #     text="Open Image",
-        #     command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-        # )
-        # open_button.pack(pady=(5, 0))
 
         markdown_display = MarkdownText(
             frame,
@@ -1176,9 +1204,9 @@ class ScreenshotApp:
             self.update_status(f"Error opening folder: {str(e)}", "error")
     
     def on_close(self):
-        """Clean up all event loops before closing"""
-        if self.ws:
-            self.main_loop.run_until_complete(self.ws.close())
+        """Clean up Socket.IO connection before closing"""
+        if self.sio.connected:
+            self.main_loop.run_until_complete(self.sio.disconnect())
             
         # Close all thread loops
         for loop in self.thread_loops.values():
@@ -1240,10 +1268,12 @@ class ScreenshotApp:
                 return loop.run_until_complete(coro)
             raise
 
+     
+    
     def make_api_call(self, payload):
         try:
-            # Use the main event loop for WebSocket communication
-            response = self.main_loop.run_until_complete(self.send_to_websocket(payload))
+            # Use the main event loop for Socket.IO communication
+            response = self.main_loop.run_until_complete(self.send_to_socketio(payload))
             print(response)
             
             if response:
@@ -1262,13 +1292,13 @@ class ScreenshotApp:
             return None
 
         except Exception as e:
-            logging.error(f"Error in WebSocket communication: {str(e)}")
+            logging.error(f"Error in Socket.IO communication: {str(e)}")
             self.log_error({
-                "occurred_while": "WebSocket communication",
+                "occurred_while": "Socket.IO communication",
                 "error_message": str(e),
                 "occurred_in": "front-end"
             })
-            self.update_status(f"WebSocket Error: {str(e)}", "error")
+            self.update_status(f"Socket.IO Error: {str(e)}", "error")
             return None
         
         finally:
@@ -1278,12 +1308,12 @@ class ScreenshotApp:
     def log_error(self, payload):
         try:
             loop = self.get_thread_loop()
-            loop.run_until_complete(self.send_to_websocket({
+            loop.run_until_complete(self.send_to_socketio({
                 "type": "error_log",
                 "payload": payload
             }))
         except Exception as e:
-            logging.error(f"Error logging through WebSocket: {str(e)}")
+            logging.error(f"Error logging through Socket.IO: {str(e)}")
             return None
 
     def parse_markdown_response(self, markdown_text):
