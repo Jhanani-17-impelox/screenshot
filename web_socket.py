@@ -317,12 +317,11 @@ class ScreenshotApp:
             # Handle response asynchronously
             await self.handle_response(data)
 
-        @self.sio.on('pong')
+        @self.sio.on('ping')
         async def on_pong(data):
             if not self.is_connected:
                 self.is_connected = True
                 logging.info("Connection re-established via pong")
-            await asyncio.sleep(2)  # Wait 2 seconds before next ping
             await self.sio.emit('ping', 'Ping from client')
 
     async def connect_socketio(self):
@@ -330,6 +329,7 @@ class ScreenshotApp:
         try:
             if not self.is_connected:
                 await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
+                await self.sio.wait()
                 self.is_connected = True
             return True
         except Exception as e:
