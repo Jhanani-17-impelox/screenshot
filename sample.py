@@ -361,7 +361,7 @@ class ScreenshotApp:
         """Establish Socket.IO connection"""
         try:
             if not self.is_connected:
-                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
+                self.sio.connect('wss://730d-2405-201-e02d-9087-553e-f568-9751-40c5.ngrok-free.app/gemini', transports=['websocket'])  
                 print("Connected to server")    # Wait for the connection to be established                    
                 self.is_connected = True
             return True
@@ -964,14 +964,43 @@ class ScreenshotApp:
 
 
     def add_screenshot_to_ui(self, index, screenshot_data):
-        print(len(self.screenshots),self.screenshots[-1])       
-        if len(self.screenshots) > 3:
-                self.screenshots=self.screenshots[:-1]
+         # Debug print to see what we're working with
+        print(f"Current screenshots count: {len(self.screenshots) if hasattr(self, 'screenshots') else 0}")
+        
+        # Ensure screenshots list exists
+        if not hasattr(self, 'screenshots') or self.screenshots is None:
+            self.screenshots = []
+        
+        # Add the new screenshot
+        self.screenshots.append(screenshot_data)
+        print(f"After adding, screenshots count: {len(self.screenshots)}")
+        
+        # If we exceed the limit (3 in your case)
+        if len(self.screenshots) > 10:
+            # Get reference to the UI element before removing it from the list
+            if hasattr(self, 'screenshots_container') and self.screenshots_container.winfo_children():
+                # Get the oldest UI element (first one added)
+                try:
+                    oldest_ui_element = self.screenshots_container.winfo_children()[0]
+                    print(f"Removing oldest UI element, child count before: {len(self.screenshots_container.winfo_children())}")
+                    oldest_ui_element.destroy()
+                    print(f"Child count after: {len(self.screenshots_container.winfo_children())}")
+                except (IndexError, TypeError) as e:
+                    print(f"Error removing UI element: {e}")
+            
+            # Now remove the oldest screenshot from our list (first one)
+            try:
+                removed = self.screenshots.pop(0)  # Remove the FIRST (oldest) element
+                print(f"Removed oldest screenshot: {removed.get('title', 'unknown')} from list")
+            except (IndexError, AttributeError) as e:
+                print(f"Error removing from screenshots list: {e}")
+                
+        
         if len(self.screenshots) % 2 == 0:
             bg=self.colors["bg_light"]
         else:   
             bg=self.colors["bg_dark"]
-        
+            
         full_text = screenshot_data.get("api_response", "")
         has_engine_issue = "<<<**Engine Description:**>>>" in full_text
 
