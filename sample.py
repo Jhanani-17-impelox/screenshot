@@ -280,29 +280,38 @@ class ScreenshotApp:
         self.main_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.main_loop)
         
+        
+
+        self.request_start_time = None  # Add this line after other self.* declarations
+        self.thread_loops = {}
         try:
-            self.main_loop.run_until_complete(self.connect_socketio())
+            asyncio.run(self.connect_socketio())
+            
         except Exception as e:
             logging.error(f"Socket.IO setup error: {str(e)}")
             self.update_status("Socket.IO setup failed", "error")
-
-        self.request_start_time = None  # Add this line after other self.* declarations
-        self.thread_loops = {}  # Add this line to initialize thread_loops dictionary
+          # Add this line to initialize thread_loops dictionary
 
     def setup_socketio_events(self):
         @self.sio.event
         async def connect():
             logging.info("Connected to server")
+            # await self.sio.connect('ws://localhost:8001/gemini', transports=['websocket']) 
             self.is_connected = True
             self.update_status("Ready to take screenshot", "success")
             # Start ping/pong after connection
-            await self.sio.emit('ping', 'Initial ping')
+            # await self.sio.emit('ready', 'Initial ping')
+            @self.sio.on('ping')  # This listens for the custom event from server
+            async def on_ping(data):
+                print(" Received ping from server:", data)
+                await self.sio.emit('pong', "Pong back to server")
 
         @self.sio.event
         async def connect_error(data):
             logging.error(f"Connection failed: {data}")
             self.is_connected = False
             self.update_status("Socket.IO connection failed", "error")
+              
 
         @self.sio.event
         async def disconnect():
@@ -312,24 +321,20 @@ class ScreenshotApp:
                 
         @self.sio.on("payload_response")
         async def on_payload_response(data):
-            logging.info("📦 Received response from server")
+            logging.info("Received response from server")
             logging.info(data)
             # Handle response asynchronously
             await self.handle_response(data)
 
-        @self.sio.on('pong')
-        async def on_pong(data):
-            if not self.is_connected:
-                self.is_connected = True
-                logging.info("Connection re-established via pong")
-            await asyncio.sleep(2)  # Wait 2 seconds before next ping
-            await self.sio.emit('ping', 'Ping from client')
+              # Respond with a pong
 
     async def connect_socketio(self):
         """Establish Socket.IO connection"""
         try:
             if not self.is_connected:
-                await self.sio.connect('ws://localhost:8001/gemini', wait_timeout=10)
+                await self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
+                print("111 already connected")  
+                await self.sio.wait()                     
                 self.is_connected = True
             return True
         except Exception as e:
