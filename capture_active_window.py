@@ -75,27 +75,6 @@ class DisplayTextManager:
         self.display_texts = []
         self.current_index = 0
 
-def parse_engine_issue(markdown_text):
-    """Parse the markdown text to identify engine issues"""
-    # Check for engine issue pattern
-    engine_issue_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', 
-                                  markdown_text, re.DOTALL)
-    
-    if engine_issue_match:
-        # Engine issue found
-        engine_text = engine_issue_match.group(1).strip()
-        return True, engine_text
-    
-    return False, None
-
-
-    """Animate the analyzing label with moving dots"""
-    current_text = label.cget("text").rstrip('.')
-    dot_count = (label.cget("text").count('.') + 1) % 4
-    label.config(text=f"{current_text}{'.' * dot_count}")
-    
-    # Return True to keep the animation running
-    return True
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
     def __init__(self, *args, **kwargs):
@@ -300,8 +279,6 @@ class ScreenshotApp:
            
             threading.Thread(target=self.start_periodic_ping,daemon=True).start()
             
-            
-
 
         @self.sio.event
         def connect_error(data):
