@@ -16,7 +16,8 @@ import re
 from itertools import cycle
 import logging
 import asyncio
-import socketio  # This is the standard import
+import socketio  
+import threading
 
 # Configure logging
 logging.basicConfig(
@@ -270,7 +271,7 @@ class ScreenshotApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Replace WebSocket initialization with Socket.IO
-        self.sio = socketio.AsyncClient()
+        self.sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=1, reconnection_delay_max=5)
         self.setup_socketio_events()
         
         # Create and set the main event loop
@@ -281,7 +282,7 @@ class ScreenshotApp:
         asyncio.set_event_loop(self.main_loop)
         
         try:
-            self.main_loop.run_until_complete(self.connect_socketio())
+            self.connect_socketio()
         except Exception as e:
             logging.error(f"Socket.IO setup error: {str(e)}")
             self.update_status("Socket.IO setup failed", "error")
@@ -291,46 +292,77 @@ class ScreenshotApp:
 
     def setup_socketio_events(self):
         @self.sio.event
-        async def connect():
+        def connect():
             logging.info("Connected to server")
-            # await self.sio.connect('ws://localhost:8001/gemini', transports=['websocket']) 
             self.is_connected = True
             self.update_status("Ready to take screenshot", "success")
             # Start ping/pong after connection
-            # await self.sio.emit('ready', 'Initial ping')
+            # asyncio.create_task(self.start_periodic_ping())
+           
+            threading.Thread(target=self.start_periodic_ping,daemon=True).start()
+            
+            
+
 
         @self.sio.event
-        async def connect_error(data):
+        def connect_error(data):
             logging.error(f"Connection failed: {data}")
             self.is_connected = False
             self.update_status("Socket.IO connection failed", "error")
-              
 
         @self.sio.event
-        async def disconnect():
+        def disconnect():
             self.is_connected = False
             logging.info("Disconnected from server")
             self.update_status("Socket.IO disconnected", "info")
                 
         @self.sio.on("payload_response")
-        async def on_payload_response(data):
+        def on_payload_response(data):
             logging.info("Received response from server")
             logging.info(data)
             # Handle response asynchronously
-            await self.handle_response(data)
+            self.handle_response(data)
 
-        @self.sio.on('ping')  # This listens for the custom event from server
-        async def on_ping(data):
-            print(" Received ping from server:", data)
-            await self.sio.emit('pong', "Pong back to server")  # Respond with a pong
+        @self.sio.on('ping')  
+        def on_ping(data):
+            logging.info(f"Received ping from server: {data}")
+            if not self.is_connected:
+                self.is_connected = True
+            self.sio.emit('pong', "Pong back to server")
 
-    async def connect_socketio(self):
+        @self.sio.on('pong')
+        def on_pong(data):
+            logging.info(f"Received pong from server: {data}")
+            if not self.is_connected:
+                self.is_connected = True
+
+    def start_periodic_ping(self):
+        """Send periodic pings to keep the connection alive"""
+        """Send periodic pings to the server to keep the connection alive"""
+        while self.is_connected:
+            try:
+                if self.is_connected:
+                    start_time = time.time()
+                    # Use a callback to get the response
+                    self.sio.emit('ping', "Ping from client")
+                    print("Ping sent to server")
+                # Sleep for the ping interval
+                time.sleep(15)
+                
+                # # Check if we haven't received a pong in a while
+                # if time.time() - self.last_pong_time > self.ping_interval * 3 and self.last_pong_time > 0:
+                #     print("No pong received for too long, connection might be dead")
+                #     self.root.after(0, lambda: self.connection_status.config(
+                #         text="Connection unstable", foreground="orange"))
+            except Exception as e:
+                print(f"Error in ping thread: {e}")
+
+    def connect_socketio(self):
         """Establish Socket.IO connection"""
         try:
             if not self.is_connected:
-                await self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
-                print("111 already connected")                       
-                await self.sio.wait()  # Wait for the connection to be established
+                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
+                print("Connected to server")    # Wait for the connection to be established                    
                 self.is_connected = True
             return True
         except Exception as e:
@@ -339,29 +371,22 @@ class ScreenshotApp:
             self.update_status("Socket.IO connection failed", "error")
             return False
 
-    async def send_to_socketio(self, payload):
+    def send_to_socketio(self, payload):
         """Send data through Socket.IO connection"""
         try:
             if not self.sio.connected:
-                await self.connect_socketio()
+                self.connect_socketio()
             
-            # Create a future to store the response
-            response_future = asyncio.Future()
             
-            @self.sio.on('gemini_response')
-            def on_response(data):
-                logging.info(f"Received response from server: {data}")
-                if not response_future.done():
-                    response_future.set_result(data)
             
             # Emit the request
-            await self.sio.emit('geminiRequest', payload)
+            self.sio.emit('geminiRequest', payload)
             
             # Wait for response with timeout
             try:
-                response = await asyncio.wait_for(response_future, timeout=30.0)
-                logging.info(f"Processing response: {response}")
-                return response
+                # response = asyncio.wait_for(response_future, timeout=30.0)
+                # logging.info(f"Processing response: {response}")
+               return True
             except asyncio.TimeoutError:
                 logging.error("Socket.IO response timeout")
                 self.update_status("Response timeout", "error")
@@ -857,27 +882,29 @@ class ScreenshotApp:
                 "image": img_str_raw 
             }
             # Replace direct emit with async call through main loop
-            result= self.main_loop.run_until_complete(self.send_to_socketio(payload_json))
+            result= self.send_to_socketio(payload_json)
             # structured_response = self.parse_markdown_response(result)
-            
+            @self.sio.on('gemini_response')
+            def on_response(data):
+                logging.info(f"Received response from server: {data}")
 
-            if result is None:
-                return
+                if data is None:
+                    return
 
-            new_screenshot_data = {
-                "image": screenshot,
-                "title": window_title,
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "path": file_path,
-                # "base64": img_str_raw,
-                # "payload_json": payload_json,
-                "api_response": result
-            }
-            self.screenshots.insert(0, new_screenshot_data)
+                new_screenshot_data = {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    # "base64": img_str_raw,
+                    # "payload_json": payload_json,
+                    "api_response": data
+                }
+                self.screenshots.insert(0, new_screenshot_data)
 
-            self.add_screenshot_to_ui(0, new_screenshot_data)
+                self.add_screenshot_to_ui(0, new_screenshot_data)
 
-            self.update_status(f"Captured {capture_type}: {window_title}", "success")
+                self.update_status(f"Captured {capture_type}: {window_title}", "success")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
@@ -1145,11 +1172,7 @@ class ScreenshotApp:
 
     def log_error(self, payload):
         try:
-            loop = self.get_thread_loop()
-            loop.run_until_complete(self.send_to_socketio({
-                "type": "error_log",
-                "payload": payload
-            }))
+            print("Logging error to Socket.IO")
         except Exception as e:
             logging.error(f"Error logging through Socket.IO: {str(e)}")
             return None
