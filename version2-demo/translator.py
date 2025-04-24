@@ -139,7 +139,8 @@ class ScreenshotApp:
         """Establish Socket.IO connection"""
         try:
             if not self.is_connected:
-                self.sio.connect('wss://730d-2405-201-e02d-9087-553e-f568-9751-40c5.ngrok-free.app/gemini', transports=['websocket'])  
+                self.sio.connect('wss://taroapi.impelox.com/gemini', transports=['websocket'])  
+                # self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
                 print("Connected to server")    # Wait for the connection to be established                    
                 self.is_connected = True
             return True
@@ -596,13 +597,13 @@ class ScreenshotApp:
         self.status_type = status_type
         
         if status_type == "success":
-            bg_color = '#03224c'
+            bg_color = '#7DDA58'
             fg_color = self.colors["text_light"]
         elif status_type == "error":
             bg_color = self.colors["error"]
             fg_color = self.colors["text_light"]
         elif status_type == "analyzing":
-            bg_color = '#C8DFF6'
+            bg_color = '#FFDE59'
             fg_color = '#000000'
         else:  # info
             bg_color = self.colors["secondary"]
