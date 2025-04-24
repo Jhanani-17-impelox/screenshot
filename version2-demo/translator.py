@@ -267,7 +267,7 @@ class ScreenshotApp:
                 )
         except Exception as e:
             logging.error(f"Error creating capture button: {str(e)}")
-            self.log_error({
+            log_error({
   "occured_while": "create_floating_button",
   "error_message": str(e),
   "occured_in": "front-end"
@@ -370,7 +370,7 @@ class ScreenshotApp:
                 return title, bounds
             except Exception as e:
                 logging.error(f"Error getting window info on Windows: {e}")
-                self.log_error({
+                log_error({
   "occured_while": "get_window_info",
   "error_message": str(e),
   "occured_in": "front-end"
@@ -560,7 +560,7 @@ class ScreenshotApp:
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
-            self.log_error({
+            log_error({
                 "occured_while": "capture_active_window",
                 "error_message": str(e),
                 "occured_in": "front-end"
