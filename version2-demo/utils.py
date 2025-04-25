@@ -230,19 +230,27 @@ def create_rounded_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
 def draw_toggle(self):
         """Draw the toggle switch based on current state"""
         self.toggle_canvas.delete("all")
-        print(self.initial_load,"123456", self.connection_var.get())
+        
         # Draw background
         if self.connection_var.get():
             bg_color = self.colors["primary"]
-            status_text = "Switching to WebSocket..."
-        # elif self.initial_load:
         else:
             bg_color = "gray70"
-            status_text = "Switching to REST API..."
-        # else:
-        #     bg_color = "gray70"
-        #     status_text = ""
-        
+            
+        # Set initial load flag if not exists
+        if not hasattr(self, '_first_load'):
+            self._first_load = True
+            status_text = ""
+        else:
+            # After initial load, show switching message only when toggling
+            if self._first_load:
+                self._first_load = False
+                status_text = ""
+            else:
+                if self.connection_var.get():
+                    status_text = "Switching to low latency..."
+                else:
+                    status_text = "Switching to high accuracy..."
             
         # Update status label with more visible styling
         self.toggle_status_label.config(
@@ -251,8 +259,9 @@ def draw_toggle(self):
             font=("Arial", 9)
         )
         
-        # Schedule the label to be hidden after 2 seconds
-        self.root.after(1200, lambda: self.toggle_status_label.config(text=""))
+        # Schedule the label to be hidden after 1.2 seconds if showing a message
+        if status_text:
+            self.root.after(1200, lambda: self.toggle_status_label.config(text=""))
             
         # Create rounded rectangle for background
         create_rounded_rectangle(
@@ -262,8 +271,7 @@ def draw_toggle(self):
             fill=bg_color,
             outline=""
         )
-
-        self.initial_load = True  # Set initial_load to False after first draw
+        
         # Draw toggle circle
         circle_x = 40 if self.connection_var.get() else 16
         self.toggle_canvas.create_oval(
