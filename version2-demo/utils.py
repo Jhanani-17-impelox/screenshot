@@ -1,24 +1,14 @@
 
 import tkinter as tk
 from tkinter import ttk
-import pyautogui
-import time
-import os
-import platform
-import tempfile
-import threading
-import base64
+import requests
 from PIL import Image, ImageTk
 from io import BytesIO
 from datetime import datetime
-import json
-import uuid
 import re
 from itertools import cycle
 import logging
-import asyncio
-import socketio  
-import threading
+
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
     def __init__(self, *args, **kwargs):
@@ -195,10 +185,31 @@ def setup_icon(self):
 
 def log_error(self, payload):
         try:
-            print("Logging error to Socket.IO")
+            
+            # url = "http://localhost:8001/v1/conversations/log-error"
+            url = "https://taroapi.impelox.com/v1/conversations/log-error"
+
+            
+            headers = {
+                "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+            }
+
+            response = requests.post(url, json=payload, headers=headers)
+            print(response)
+
+
         except Exception as e:
-            logging.error(f"Error logging through Socket.IO: {str(e)}")
+            logging.error(f"Error in API call: {str(e)}")
+            self.log_error({
+  "occured_while": "insert in error log api",
+  "error_message": str(e),
+  "occured_in": "front-end"
+})
+            self.update_status(f"API Error: {str(e)}", "error")
             return None
+        
+
 def create_rounded_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
     """Helper function to create a rounded rectangle on a canvas"""
     points = [
@@ -231,7 +242,7 @@ def draw_toggle(self):
         create_rounded_rectangle(
             self.toggle_canvas,
             2, 2, 58, 22,
-            radius=10,
+            radius=24,
             fill=bg_color,
             outline=""
         )
@@ -253,7 +264,7 @@ def toggle_connection(self):
             if not self.is_connected:
                 try:
                     self.connect_socketio()
-                    self.update_status("Switched to WebSocket connection", "success")
+                    self.update_status("Switched to low latency", "success")
                 except Exception as e:
                     self.update_status("Failed to connect to WebSocket", "error")
                     self.connection_var.set(False)
@@ -264,7 +275,7 @@ def toggle_connection(self):
                 try:
                     self.sio.disconnect()
                     self.is_connected = False
-                    self.update_status("Switched to REST API", "success")
+                    self.update_status("Switched to high accuracy", "success")
                 except Exception as e:
                     logging.error(f"Error disconnecting from WebSocket: {str(e)}")
                     self.update_status("Error disconnecting from WebSocket", "error")
@@ -275,6 +286,14 @@ def create_connection_toggle(self):
         toggle_frame = ttk.Frame(self.root)
         toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
         
+         # Create label for toggle
+        self.toggle_label = ttk.Label(
+            toggle_frame,
+            text="Fast(beta)",
+            background=self.colors["bg_light"],
+            foreground=self.colors["primary"]
+        )
+        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
         # Create canvas for custom toggle
         self.toggle_canvas = tk.Canvas(
             toggle_frame,
@@ -285,14 +304,7 @@ def create_connection_toggle(self):
         )
         self.toggle_canvas.pack(side=tk.RIGHT, padx=5)
         
-        # Create label for toggle
-        self.toggle_label = ttk.Label(
-            toggle_frame,
-            text="Fast(beta)",
-            background=self.colors["bg_light"],
-            foreground=self.colors["primary"]
-        )
-        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
+       
         
         # Initialize toggle state
         self.connection_var = tk.BooleanVar(value=False)
