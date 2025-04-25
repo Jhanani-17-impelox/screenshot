@@ -85,6 +85,27 @@ class ScreenshotApp:
         self.request_start_time = None
         self.thread_loops = {}
 
+    def clear_websocket_events(self):
+        """Clear application-specific WebSocket events, preserving core connection events"""
+        if hasattr(self, 'sio'):
+            # Store the core event handlers before clearing
+            connect_handler = self.sio.handlers.get('connect', None)
+            disconnect_handler = self.sio.handlers.get('disconnect', None)
+            connect_error_handler = self.sio.handlers.get('connect_error', None)
+            
+            # Clear all registered event handlers
+            self.sio.handlers.clear()
+            
+            # Restore core event handlers
+            if connect_handler:
+                self.sio.handlers['connect'] = connect_handler
+            if disconnect_handler:
+                self.sio.handlers['disconnect'] = disconnect_handler
+            if connect_error_handler:
+                self.sio.handlers['connect_error'] = connect_error_handler
+                
+            logging.info("Cleared application WebSocket events while preserving core events")
+    
     def setup_socketio_events(self):
         """Setup Socket.IO event handlers without connecting"""
         @self.sio.event
@@ -98,12 +119,15 @@ class ScreenshotApp:
         def connect_error(data):
             logging.error(f"Connection failed: {data}")
             self.is_connected = False
+            self.clear_websocket_events()  # Clear events on connection error
             self.update_status("Socket.IO connection failed", "error")
+
         @self.sio.event
         def disconnect():
             self.is_connected = False
+            self.clear_websocket_events()  # Clear events on disconnect
             logging.info("Disconnected from server")
-            self.update_status("Socket.IO disconnected", "info")              
+            self.update_status("Socket.IO disconnected", "info")
 
         @self.sio.on('ping')  
         def on_ping(data):
@@ -135,9 +159,10 @@ class ScreenshotApp:
     def connect_socketio(self):
         """Establish Socket.IO connection"""
         try:
+            print("Connecting to Socket.IO server...", self.is_connected)
             if not self.is_connected:
                 # self.sio.connect('wss://taroapi.impelox.com/gemini', transports=['websocket'])  
-                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])  
+                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'],socketio_path='/socket.io')  
                 print("Connected to server")    # Wait for the connection to be established                    
                 self.is_connected = True
             return True
