@@ -415,7 +415,7 @@ class ScreenshotApp:
     def toggle_connection(self):
         """Handle connection toggle between REST and WebSocket"""
         self.use_websocket = self.connection_var.get()
-        
+        print(f"Switching to {'WebSocket' if self.use_websocket else 'REST API'}",self.use_websocket)
         if self.use_websocket:
             # Switch to WebSocket
             if not self.is_connected:
@@ -632,7 +632,7 @@ class ScreenshotApp:
             self.update_status("Analyzing screenshot...", "analyzing")
 
            
-
+            print(self.use_websocket, self.is_connected)
             if self.use_websocket and self.is_connected:
                 # Use WebSocket connection
                 result = self.send_to_socketio(img_str_raw)
