@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, PhotoImage
 import pyautogui
 import time
 import os
@@ -19,7 +19,7 @@ import asyncio
 import socketio  
 import threading
 import requests
-from utils import MarkdownText , setup_icon,configure_styles, log_error
+from utils import MarkdownText , setup_icon,configure_styles, log_error,toggle_connection,create_connection_toggle,draw_toggle
 
 # Configure logging
 logging.basicConfig(
@@ -74,7 +74,7 @@ class ScreenshotApp:
         
         self.create_main_layout()
         self.create_floating_button()
-        self.create_connection_toggle()  # Add toggle button creation
+        create_connection_toggle(self)  # Add toggle button creation
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -411,51 +411,13 @@ class ScreenshotApp:
         self.x = None
         self.y = None
 
-    def create_connection_toggle(self):
-        """Create a toggle button for switching between REST and WebSocket"""
-        toggle_frame = ttk.Frame(self.root)
-        toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
-        
-        self.connection_var = tk.BooleanVar(value=False)
-        self.connection_toggle = ttk.Checkbutton(
-            toggle_frame,
-            text="WebSocket",
-            variable=self.connection_var,
-            command=self.toggle_connection,
-            style='Switch.TCheckbutton'
-        )
-        self.connection_toggle.pack(side=tk.RIGHT)
-        
-        # Create custom style for toggle button
-        style = ttk.Style()
-        style.configure('Switch.TCheckbutton', 
-                        background=self.colors["bg_light"],
-                        foreground=self.colors["primary"])
 
-    def toggle_connection(self):
-        """Handle connection toggle between REST and WebSocket"""
-        self.use_websocket = self.connection_var.get()
-        print(f"Switching to {'WebSocket' if self.use_websocket else 'REST API'}",self.use_websocket)
-        if self.use_websocket:
-            # Switch to WebSocket
-            if not self.is_connected:
-                try:
-                    self.connect_socketio()
-                    self.update_status("Switched to WebSocket connection", "success")
-                except Exception as e:
-                    self.update_status("Failed to connect to WebSocket", "error")
-                    self.connection_var.set(False)
-                    self.use_websocket = False
-        else:
-            # Switch to REST API
-            if self.is_connected:
-                try:
-                    self.sio.disconnect()
-                    self.is_connected = False
-                    self.update_status("Switched to REST API", "success")
-                except Exception as e:
-                    logging.error(f"Error disconnecting from WebSocket: {str(e)}")
-                    self.update_status("Error disconnecting from WebSocket", "error")
+    def on_toggle_click(self, event):
+        """Handle toggle click event"""
+        self.connection_var.set(not self.connection_var.get())
+        draw_toggle(self)
+        toggle_connection(self)
+        
 
     def handle_capture(self):
         if self.is_capturing:

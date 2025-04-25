@@ -199,4 +199,105 @@ def log_error(self, payload):
         except Exception as e:
             logging.error(f"Error logging through Socket.IO: {str(e)}")
             return None
-    
+def create_rounded_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
+    """Helper function to create a rounded rectangle on a canvas"""
+    points = [
+        x1 + radius, y1,
+        x2 - radius, y1,
+        x2, y1,
+        x2, y1 + radius,
+        x2, y2 - radius,
+        x2, y2,
+        x2 - radius, y2,
+        x1 + radius, y2,
+        x1, y2,
+        x1, y2 - radius,
+        x1, y1 + radius,
+        x1, y1
+    ]
+    return canvas.create_polygon(points, smooth=True, **kwargs)
+
+def draw_toggle(self):
+        """Draw the toggle switch based on current state"""
+        self.toggle_canvas.delete("all")
+        
+        # Draw background
+        if self.connection_var.get():
+            bg_color = self.colors["primary"]
+        else:
+            bg_color = "gray70"
+            
+        # Create rounded rectangle for background
+        create_rounded_rectangle(
+            self.toggle_canvas,
+            2, 2, 58, 22,
+            radius=10,
+            fill=bg_color,
+            outline=""
+        )
+        
+        # Draw toggle circle
+        circle_x = 40 if self.connection_var.get() else 16
+        self.toggle_canvas.create_oval(
+            circle_x - 8, 4,
+            circle_x + 8, 20,
+            fill="white",
+            outline=""
+        )
+def toggle_connection(self):
+        """Handle connection toggle between REST and WebSocket"""
+        self.use_websocket = self.connection_var.get()
+        print(f"Switching to {'WebSocket' if self.use_websocket else 'REST API'}",self.use_websocket)
+        if self.use_websocket:
+            # Switch to WebSocket
+            if not self.is_connected:
+                try:
+                    self.connect_socketio()
+                    self.update_status("Switched to WebSocket connection", "success")
+                except Exception as e:
+                    self.update_status("Failed to connect to WebSocket", "error")
+                    self.connection_var.set(False)
+                    self.use_websocket = False
+        else:
+            # Switch to REST API
+            if self.is_connected:
+                try:
+                    self.sio.disconnect()
+                    self.is_connected = False
+                    self.update_status("Switched to REST API", "success")
+                except Exception as e:
+                    logging.error(f"Error disconnecting from WebSocket: {str(e)}")
+                    self.update_status("Error disconnecting from WebSocket", "error")
+
+     
+def create_connection_toggle(self):
+        """Create a toggle button for switching between REST and WebSocket"""
+        toggle_frame = ttk.Frame(self.root)
+        toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
+        
+        # Create canvas for custom toggle
+        self.toggle_canvas = tk.Canvas(
+            toggle_frame,
+            width=60,
+            height=24,
+            bg=self.colors["bg_light"],
+            highlightthickness=0
+        )
+        self.toggle_canvas.pack(side=tk.RIGHT, padx=5)
+        
+        # Create label for toggle
+        self.toggle_label = ttk.Label(
+            toggle_frame,
+            text="Fast(beta)",
+            background=self.colors["bg_light"],
+            foreground=self.colors["primary"]
+        )
+        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
+        
+        # Initialize toggle state
+        self.connection_var = tk.BooleanVar(value=False)
+        draw_toggle(self)
+        
+        # Bind click event
+        self.toggle_canvas.bind("<Button-1>", self.on_toggle_click)
+      
