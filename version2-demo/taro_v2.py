@@ -41,6 +41,7 @@ class ScreenshotApp:
             self.root.title("Taro ")
             self.root.geometry("1024x768")
             self.root.resizable(True, True)
+            self.initial_load=False
             self.script_dir = os.path.dirname(os.path.abspath(__file__))
             self.colors = {
                 "primary": "#4a6baf",

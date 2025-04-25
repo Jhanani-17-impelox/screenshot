@@ -230,14 +230,19 @@ def create_rounded_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
 def draw_toggle(self):
         """Draw the toggle switch based on current state"""
         self.toggle_canvas.delete("all")
-        
+        print(self.initial_load,"123456", self.connection_var.get())
         # Draw background
         if self.connection_var.get():
             bg_color = self.colors["primary"]
             status_text = "Switching to WebSocket..."
+        # elif self.initial_load:
         else:
             bg_color = "gray70"
             status_text = "Switching to REST API..."
+        # else:
+        #     bg_color = "gray70"
+        #     status_text = ""
+        
             
         # Update status label with more visible styling
         self.toggle_status_label.config(
@@ -257,7 +262,8 @@ def draw_toggle(self):
             fill=bg_color,
             outline=""
         )
-        
+
+        self.initial_load = True  # Set initial_load to False after first draw
         # Draw toggle circle
         circle_x = 40 if self.connection_var.get() else 16
         self.toggle_canvas.create_oval(
@@ -302,6 +308,14 @@ def create_connection_toggle(self):
         toggle_container = ttk.Frame(toggle_frame)
         toggle_container.pack(side=tk.TOP)
         
+         # Create label for toggle next to the button
+        self.toggle_label = ttk.Label(
+            toggle_container,
+            text="Fast(beta)",
+            background=self.colors["bg_light"],
+            foreground=self.colors["primary"]
+        )
+        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
         # Create canvas for custom toggle
         self.toggle_canvas = tk.Canvas(
             toggle_container,
@@ -312,14 +326,7 @@ def create_connection_toggle(self):
         )
         self.toggle_canvas.pack(side=tk.RIGHT, padx=(30, 0))
 
-        # Create label for toggle next to the button
-        self.toggle_label = ttk.Label(
-            toggle_container,
-            text="Fast(beta)",
-            background=self.colors["bg_light"],
-            foreground=self.colors["primary"]
-        )
-        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
+       
         
         # Create a fixed-width frame for the status label with minimum height
         status_frame = ttk.Frame(toggle_frame, width=220, height=20)
