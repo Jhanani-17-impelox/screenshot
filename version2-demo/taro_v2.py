@@ -36,7 +36,7 @@ class ScreenshotApp:
     def __init__(self, root):
         self.root = root
         self.is_connected = False
-        self.use_websocket = False  # New flag for connection type
+        self.use_websocket = False  # Default to REST API
         self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
@@ -78,27 +78,22 @@ class ScreenshotApp:
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Replace WebSocket initialization with Socket.IO
+        # Initialize Socket.IO client but don't connect
         self.sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=1, reconnection_delay_max=5)
         self.setup_socketio_events()
         
-        
-        try:
-            self.connect_socketio()
-        except Exception as e:
-            logging.error(f"Socket.IO setup error: {str(e)}")
-            self.update_status("Socket.IO setup failed", "error")
-
-        self.request_start_time = None  # Add this line after other self.* declarations
-        self.thread_loops = {}  # Add this line to initialize thread_loops dictionary
+        self.request_start_time = None
+        self.thread_loops = {}
 
     def setup_socketio_events(self):
+        """Setup Socket.IO event handlers without connecting"""
         @self.sio.event
         def connect():
             logging.info("Connected to server")
             self.is_connected = True
-            self.update_status("Ready to take screenshot", "success")
-            threading.Thread(target=self.start_periodic_ping,daemon=True).start()
+            self.update_status("WebSocket connected", "success")
+            threading.Thread(target=self.start_periodic_ping, daemon=True).start()
+
         @self.sio.event
         def connect_error(data):
             logging.error(f"Connection failed: {data}")
