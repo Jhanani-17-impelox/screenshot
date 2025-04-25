@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import requests
@@ -235,8 +234,15 @@ def draw_toggle(self):
         # Draw background
         if self.connection_var.get():
             bg_color = self.colors["primary"]
+            status_text = "Switching to low latency..."
         else:
             bg_color = "gray70"
+            status_text = "switching to high accuracy..."
+            
+        # Update status label temporarily
+        self.toggle_status_label.config(text=status_text)
+        # Schedule the label to be hidden after 2 seconds
+        self.root.after(1500, lambda: self.toggle_status_label.config(text=""))
             
         # Create rounded rectangle for background
         create_rounded_rectangle(
@@ -255,6 +261,7 @@ def draw_toggle(self):
             fill="white",
             outline=""
         )
+
 def toggle_connection(self):
         """Handle connection toggle between REST and WebSocket"""
         self.use_websocket = self.connection_var.get()
@@ -286,14 +293,6 @@ def create_connection_toggle(self):
         toggle_frame = ttk.Frame(self.root)
         toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
         
-         # Create label for toggle
-        self.toggle_label = ttk.Label(
-            toggle_frame,
-            text="Fast(beta)",
-            background=self.colors["bg_light"],
-            foreground=self.colors["primary"]
-        )
-        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
         # Create canvas for custom toggle
         self.toggle_canvas = tk.Canvas(
             toggle_frame,
@@ -302,15 +301,24 @@ def create_connection_toggle(self):
             bg=self.colors["bg_light"],
             highlightthickness=0
         )
-        self.toggle_canvas.pack(side=tk.RIGHT, padx=5)
+        self.toggle_canvas.pack(side=tk.TOP, padx=5)
+
+        # Create label for toggle below the button
+        self.toggle_label = ttk.Label(
+            toggle_frame,
+            text="Fast(beta)",
+            background=self.colors["bg_light"],
+            foreground=self.colors["primary"]
+        )
+        self.toggle_label.pack(side=tk.TOP, pady=(5, 0))
         
         self.toggle_status_label = ttk.Label(
             toggle_frame,
             text="",  # Initially empty
             background=self.colors["bg_light"],
-            foreground=self.colors["secondary"]  # Use any appropriate color
+            foreground=self.colors["secondary"]
         )
-        self.toggle_status_label.pack(side=tk.BOTTOM, pady=(2, 0))
+        self.toggle_status_label.pack(side=tk.TOP, pady=(2, 0))
         
         # Initialize toggle state
         self.connection_var = tk.BooleanVar(value=False)
@@ -318,4 +326,3 @@ def create_connection_toggle(self):
         
         # Bind click event
         self.toggle_canvas.bind("<Button-1>", self.on_toggle_click)
-      
