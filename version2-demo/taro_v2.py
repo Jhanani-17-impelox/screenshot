@@ -125,7 +125,7 @@ class ScreenshotApp:
             def connect():
                 logging.info("Connected to server")
                 self.is_connected = True
-                self.update_status("WebSocket connected", "success")
+                self.update_status("Switched to low latency.", "switch")
                 threading.Thread(target=self.start_periodic_ping, daemon=True).start()
 
             @self.sio.event
@@ -865,6 +865,9 @@ class ScreenshotApp:
             elif status_type == "analyzing":
                 bg_color = '#FFDE59'
                 fg_color = '#000000'
+            elif status_type == "switch":
+                bg_color = '#060270'
+                fg_color = '#FFFFFF'
             else:  # info
                 bg_color = self.colors["secondary"]
                 fg_color = self.colors["text_light"]

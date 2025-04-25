@@ -264,7 +264,7 @@ def toggle_connection(self):
             if not self.is_connected:
                 try:
                     self.connect_socketio()
-                    self.update_status("Switched to low latency", "success")
+                    self.update_status("Switched to low latency.", "switch")
                 except Exception as e:
                     self.update_status("Failed to connect to WebSocket", "error")
                     self.connection_var.set(False)
@@ -275,7 +275,7 @@ def toggle_connection(self):
                 try:
                     self.sio.disconnect()
                     self.is_connected = False
-                    self.update_status("Switched to high accuracy", "success")
+                    self.update_status("Switched to high accuracy.", "switch")
                 except Exception as e:
                     logging.error(f"Error disconnecting from WebSocket: {str(e)}")
                     self.update_status("Error disconnecting from WebSocket", "error")
@@ -304,7 +304,13 @@ def create_connection_toggle(self):
         )
         self.toggle_canvas.pack(side=tk.RIGHT, padx=5)
         
-       
+        self.toggle_status_label = ttk.Label(
+            toggle_frame,
+            text="",  # Initially empty
+            background=self.colors["bg_light"],
+            foreground=self.colors["secondary"]  # Use any appropriate color
+        )
+        self.toggle_status_label.pack(side=tk.BOTTOM, pady=(2, 0))
         
         # Initialize toggle state
         self.connection_var = tk.BooleanVar(value=False)
