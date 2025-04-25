@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import pyautogui
@@ -19,6 +18,7 @@ import logging
 import asyncio
 import socketio  
 import threading
+import requests
 from utils import MarkdownText , setup_icon,configure_styles, log_error
 
 # Configure logging
@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 class ScreenshotApp:
     def __init__(self, root):
         self.root = root
-        self.is_connected = False  # Add connection state attribute
+        self.is_connected = False
+        self.use_websocket = False  # New flag for connection type
         self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
@@ -73,6 +74,7 @@ class ScreenshotApp:
         
         self.create_main_layout()
         self.create_floating_button()
+        self.create_connection_toggle()  # Add toggle button creation
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -150,9 +152,13 @@ class ScreenshotApp:
             self.update_status("Socket.IO connection failed", "error")
             return False
 
-    def send_to_socketio(self, payload):
+    def send_to_socketio(self, image_data):
         """Send data through Socket.IO connection"""
         try:
+            payload = {
+                "message": "Get the required information from the image - Inspectore Notes, Faults, Precautions, or Accident Information and Engine Description",
+                "image": image_data 
+            }
             if not self.sio.connected:
                 self.connect_socketio()
             self.sio.emit('geminiRequest', payload)
@@ -167,6 +173,53 @@ class ScreenshotApp:
             logging.error(f"Socket.IO communication error: {str(e)}")
             self.update_status("Socket.IO communication error", "error")
             return None
+
+    def send_to_rest_api(self, image_data):
+        """Send data through REST API"""
+        try:
+            session_id = str(uuid.uuid4())
+            payload = {
+                "session_id": session_id,
+                "user_message": {
+                    "type": "image",
+                    "image": [image_data],
+                },
+                "conversation_history": [
+                    {
+                        "role": "user",
+                        "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
+                        "attachments": [
+                            {
+                                "type": "file",
+                                "base64String": [image_data]
+                            }
+                        ]
+                    }
+                ]
+            }
+            url = "http://localhost:8001/v1/chat"
+            # url = "https://taroapi.impelox.com/v1/chat"
+            print("Sending data to REST API")
+            
+            headers = {
+                "Content-Type": "application/json",
+                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
+            }
+
+            response = requests.post(url, json=payload, headers=headers, stream=True)
+            response.raise_for_status()
+            print(response.json().get("assistant_message", ""))
+            if response.status_code == 201:
+                return response.json().get("assistant_message", "")
+            else:
+                logging.error(f"REST API error: {response.status_code}")
+                self.update_status(f"REST API error: {response.status_code}", "error")
+                return None
+        except Exception as e:
+            logging.error(f"REST API communication error: {str(e)}")
+            self.update_status("REST API communication error", "error")
+            return None
+
     def create_main_layout(self):
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -337,6 +390,52 @@ class ScreenshotApp:
             self.handle_capture()
         self.x = None
         self.y = None
+
+    def create_connection_toggle(self):
+        """Create a toggle button for switching between REST and WebSocket"""
+        toggle_frame = ttk.Frame(self.root)
+        toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
+        
+        self.connection_var = tk.BooleanVar(value=False)
+        self.connection_toggle = ttk.Checkbutton(
+            toggle_frame,
+            text="WebSocket",
+            variable=self.connection_var,
+            command=self.toggle_connection,
+            style='Switch.TCheckbutton'
+        )
+        self.connection_toggle.pack(side=tk.RIGHT)
+        
+        # Create custom style for toggle button
+        style = ttk.Style()
+        style.configure('Switch.TCheckbutton', 
+                        background=self.colors["bg_light"],
+                        foreground=self.colors["primary"])
+
+    def toggle_connection(self):
+        """Handle connection toggle between REST and WebSocket"""
+        self.use_websocket = self.connection_var.get()
+        
+        if self.use_websocket:
+            # Switch to WebSocket
+            if not self.is_connected:
+                try:
+                    self.connect_socketio()
+                    self.update_status("Switched to WebSocket connection", "success")
+                except Exception as e:
+                    self.update_status("Failed to connect to WebSocket", "error")
+                    self.connection_var.set(False)
+                    self.use_websocket = False
+        else:
+            # Switch to REST API
+            if self.is_connected:
+                try:
+                    self.sio.disconnect()
+                    self.is_connected = False
+                    self.update_status("Switched to REST API", "success")
+                except Exception as e:
+                    logging.error(f"Error disconnecting from WebSocket: {str(e)}")
+                    self.update_status("Error disconnecting from WebSocket", "error")
 
     def handle_capture(self):
         if self.is_capturing:
@@ -532,13 +631,27 @@ class ScreenshotApp:
             session_id = str(uuid.uuid4())
             self.update_status("Analyzing screenshot...", "analyzing")
 
-            payload_json = {
-                "message": "Get the required information from the image - Inspectore Notes, Faults, Precautions, or Accident Information and Engine Description",
-                "image": img_str_raw 
-            }
-            # Replace direct emit with async call through main loop
-            result= self.send_to_socketio(payload_json)
-            # structured_response = self.parse_markdown_response(result)
+           
+
+            if self.use_websocket and self.is_connected:
+                # Use WebSocket connection
+                result = self.send_to_socketio(img_str_raw)
+            else:
+                # Use REST API
+                result = self.send_to_rest_api(img_str_raw)
+                if result:
+                    # Handle REST API response directly
+                    new_screenshot_data = {
+                        "image": screenshot,
+                        "title": window_title,
+                        "timestamp": datetime.now().strftime("%H:%M:%S"),
+                        "path": file_path,
+                        "api_response": result
+                    }
+                    self.screenshots.insert(0, new_screenshot_data)
+                    self.add_screenshot_to_ui(0, new_screenshot_data)
+                    self.update_status(f"Captured {capture_type}: {window_title}", "success")
+
             @self.sio.on('gemini_response')
             def on_response(data):
                 logging.info(f"Received response from server: {data}")
