@@ -290,7 +290,7 @@ class ScreenshotApp:
                 font=("Arial", 18, "bold"),
                 foreground=self.colors["primary"]
             )
-            title_label.pack(pady=(0, 40))
+            title_label.pack(pady=(0, 35))
             
             self.status_frame = ttk.Frame(main_frame)
             self.status_frame.pack(fill=tk.X, pady=(0, 10))

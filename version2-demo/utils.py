@@ -234,15 +234,20 @@ def draw_toggle(self):
         # Draw background
         if self.connection_var.get():
             bg_color = self.colors["primary"]
-            status_text = "Switching to low latency..."
+            status_text = "Switching to WebSocket..."
         else:
             bg_color = "gray70"
-            status_text = "switching to high accuracy..."
+            status_text = "Switching to REST API..."
             
-        # Update status label temporarily
-        self.toggle_status_label.config(text=status_text)
+        # Update status label with more visible styling
+        self.toggle_status_label.config(
+            text=status_text,
+            foreground=self.colors["primary"],
+            font=("Arial", 9)
+        )
+        
         # Schedule the label to be hidden after 2 seconds
-        self.root.after(1500, lambda: self.toggle_status_label.config(text=""))
+        self.root.after(1200, lambda: self.toggle_status_label.config(text=""))
             
         # Create rounded rectangle for background
         create_rounded_rectangle(
@@ -293,32 +298,47 @@ def create_connection_toggle(self):
         toggle_frame = ttk.Frame(self.root)
         toggle_frame.place(relx=1.0, rely=0, anchor="ne", x=-10, y=10)
         
+        # Container frame for toggle and Fast(beta) label
+        toggle_container = ttk.Frame(toggle_frame)
+        toggle_container.pack(side=tk.TOP)
+        
         # Create canvas for custom toggle
         self.toggle_canvas = tk.Canvas(
-            toggle_frame,
+            toggle_container,
             width=60,
             height=24,
             bg=self.colors["bg_light"],
             highlightthickness=0
         )
-        self.toggle_canvas.pack(side=tk.TOP, padx=5)
+        self.toggle_canvas.pack(side=tk.RIGHT, padx=(30, 0))
 
-        # Create label for toggle below the button
+        # Create label for toggle next to the button
         self.toggle_label = ttk.Label(
-            toggle_frame,
+            toggle_container,
             text="Fast(beta)",
             background=self.colors["bg_light"],
             foreground=self.colors["primary"]
         )
-        self.toggle_label.pack(side=tk.TOP, pady=(5, 0))
+        self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
         
+        # Create a fixed-width frame for the status label with minimum height
+        status_frame = ttk.Frame(toggle_frame, width=220, height=20)
+        status_frame.pack(side=tk.TOP, pady=(5, 0), padx=(0, 0))  # Added right padding to move text left
+        status_frame.pack_propagate(False)
+        
+        # Status label with center alignment, shifted left
         self.toggle_status_label = ttk.Label(
-            toggle_frame,
+            status_frame,
             text="",  # Initially empty
             background=self.colors["bg_light"],
-            foreground=self.colors["secondary"]
+            foreground=self.colors["secondary"],
+            anchor="center",
+            justify="center"
         )
-        self.toggle_status_label.pack(side=tk.TOP, pady=(2, 0))
+        self.toggle_status_label.pack(expand=True, fill="both", padx=(0, 15))  # Added right padding to shift text left
+        
+        # Force the status frame to stay visible even when empty
+        status_frame.grid_propagate(False)
         
         # Initialize toggle state
         self.connection_var = tk.BooleanVar(value=False)
