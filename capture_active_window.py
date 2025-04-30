@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import pyautogui
@@ -13,10 +12,12 @@ from io import BytesIO
 from datetime import datetime
 import json
 import uuid
-import requests
 import re
 from itertools import cycle
 import logging
+import asyncio
+import socketio  
+import threading
 
 # Configure logging
 logging.basicConfig(
@@ -28,9 +29,6 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger(__name__)
 
-# Add these imports at the top of your file
-import webbrowser
-from tkhtmlview import HTMLLabel, HTMLScrolledText, RenderHTML
 
 
 class DisplayTextManager:
@@ -77,70 +75,6 @@ class DisplayTextManager:
         self.display_texts = []
         self.current_index = 0
 
-def parse_engine_issue(markdown_text):
-    """Parse the markdown text to identify engine issues"""
-    # Check for engine issue pattern
-    engine_issue_match = re.search(r'<<<\*\*Engine Description:\*\*>>>(.*?)(?=\n\n\*\*|\Z)', 
-                                  markdown_text, re.DOTALL)
-    
-    if engine_issue_match:
-        # Engine issue found
-        engine_text = engine_issue_match.group(1).strip()
-        return True, engine_text
-    
-    return False, None
-
-def animate_analyzing_label(label):
-    """Animate the analyzing label with moving dots"""
-    current_text = label.cget("text").rstrip('.')
-    dot_count = (label.cget("text").count('.') + 1) % 4
-    label.config(text=f"{current_text}{'.' * dot_count}")
-    
-    # Return True to keep the animation running
-    return True
-
-def update_streaming_layout(parent, text_manager, index):
-    """Update the entire streaming layout with the latest text"""
-    # Get the current text
-    current_text = text_manager.get_text(index)
-    
-    # Update the markdown display
-    if hasattr(parent, 'markdown_text'):
-        parent.markdown_text.config(state=tk.NORMAL)
-        parent.markdown_text.delete(1.0, tk.END)
-        
-        # Process the text with enhanced markdown formatting
-        has_engine_issue, engine_text = parse_engine_issue(current_text)
-        
-        if has_engine_issue:
-            # Split by the engine issue marker
-            parts = current_text.split("<<<**Engine Description:**>>>")
-            
-            # Insert the first part normally
-            parent.markdown_text.insert_markdown(parts[0])
-            
-            # Insert the engine issue marker in red
-            parent.markdown_text.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
-            
-            # Find where the next section begins
-            next_section = re.search(r'\n\n\*\*', parts[1])
-            
-            if next_section:
-                # Insert engine details in red
-                engine_details = parts[1][:next_section.start()]
-                parent.markdown_text.insert(tk.END, engine_details.strip(), "engine_issue")
-                
-                # Insert the rest of the text normally
-                remaining_text = parts[1][next_section.start():]
-                parent.markdown_text.insert_markdown(remaining_text)
-            else:
-                # Just insert the engine part in red
-                parent.markdown_text.insert(tk.END, parts[1].strip(), "engine_issue")
-        else:
-            # No engine issue, just insert the whole text
-            parent.markdown_text.insert_markdown(current_text)
-        
-        parent.markdown_text.config(state=tk.DISABLED)
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
     def __init__(self, *args, **kwargs):
@@ -273,13 +207,13 @@ class MarkdownText(tk.Text):
 class ScreenshotApp:
     def __init__(self, root):
         self.root = root
+        self.is_connected = False  # Add connection state attribute
         self.root.title("Taro ")
         self.root.geometry("1024x768")
         self.root.resizable(True, True)
 
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.payload_file = os.path.join(self.script_dir, "payload.json")
-
+       
         # Define color scheme for a more colorful UI
         self.colors = {
             "primary": "#4a6baf",
@@ -314,7 +248,133 @@ class ScreenshotApp:
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+        # Replace WebSocket initialization with Socket.IO
+        self.sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=1, reconnection_delay_max=5)
+        self.setup_socketio_events()
+        
+        # Create and set the main event loop
+        if platform.system() == 'Windows':
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        
+        self.main_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.main_loop)
+        
+        try:
+            self.connect_socketio()
+        except Exception as e:
+            logging.error(f"Socket.IO setup error: {str(e)}")
+            self.update_status("Socket.IO setup failed", "error")
 
+        self.request_start_time = None  # Add this line after other self.* declarations
+        self.thread_loops = {}  # Add this line to initialize thread_loops dictionary
+
+    def setup_socketio_events(self):
+        @self.sio.event
+        def connect():
+            logging.info("Connected to server")
+            self.is_connected = True
+            self.update_status("Ready to take screenshot", "success")
+            # Start ping/pong after connection
+            # asyncio.create_task(self.start_periodic_ping())
+           
+            threading.Thread(target=self.start_periodic_ping,daemon=True).start()
+            
+
+        @self.sio.event
+        def connect_error(data):
+            logging.error(f"Connection failed: {data}")
+            self.is_connected = False
+            self.update_status("Socket.IO connection failed", "error")
+
+        @self.sio.event
+        def disconnect():
+            self.is_connected = False
+            logging.info("Disconnected from server")
+            self.update_status("Socket.IO disconnected", "info")
+                
+        @self.sio.on("payload_response")
+        def on_payload_response(data):
+            logging.info("Received response from server")
+            logging.info(data)
+            # Handle response asynchronously
+            self.handle_response(data)
+
+        @self.sio.on('ping')  
+        def on_ping(data):
+            logging.info(f"Received ping from server: {data}")
+            if not self.is_connected:
+                self.is_connected = True
+            self.sio.emit('pong', "Pong back to server")
+
+        @self.sio.on('pong')
+        def on_pong(data):
+            logging.info(f"Received pong from server: {data}")
+            if not self.is_connected:
+                self.is_connected = True
+
+    def start_periodic_ping(self):
+        """Send periodic pings to keep the connection alive"""
+        """Send periodic pings to the server to keep the connection alive"""
+        while self.is_connected:
+            try:
+                if self.is_connected:
+                    start_time = time.time()
+                    # Use a callback to get the response
+                    self.sio.emit('ping', "Ping from client")
+                    print("Ping sent to server")
+                # Sleep for the ping interval
+                time.sleep(15)
+                
+                # # Check if we haven't received a pong in a while
+                # if time.time() - self.last_pong_time > self.ping_interval * 3 and self.last_pong_time > 0:
+                #     print("No pong received for too long, connection might be dead")
+                #     self.root.after(0, lambda: self.connection_status.config(
+                #         text="Connection unstable", foreground="orange"))
+            except Exception as e:
+                print(f"Error in ping thread: {e}")
+
+    def connect_socketio(self):
+        """Establish Socket.IO connection"""
+        try:
+            if not self.is_connected:
+                self.sio.connect('wss://730d-2405-201-e02d-9087-553e-f568-9751-40c5.ngrok-free.app/gemini', transports=['websocket'])  
+                print("Connected to server")    # Wait for the connection to be established                    
+                self.is_connected = True
+            return True
+        except Exception as e:
+            logging.error(f"Socket.IO connection failed: {str(e)}")
+            self.is_connected = False
+            self.update_status("Socket.IO connection failed", "error")
+            return False
+
+    def send_to_socketio(self, payload):
+        """Send data through Socket.IO connection"""
+        try:
+            if not self.sio.connected:
+                self.connect_socketio()
+            
+            
+            
+            # Emit the request
+            self.sio.emit('geminiRequest', payload)
+            
+            # Wait for response with timeout
+            try:
+                # response = asyncio.wait_for(response_future, timeout=30.0)
+                # logging.info(f"Processing response: {response}")
+               return True
+            except asyncio.TimeoutError:
+                logging.error("Socket.IO response timeout")
+                self.update_status("Response timeout", "error")
+                return None
+            # finally:
+            #     # Remove the temporary event handler
+            #     self.sio.off('gemini_response', on_response)
+                
+        except Exception as e:
+            logging.error(f"Socket.IO communication error: {str(e)}")
+            self.update_status("Socket.IO communication error", "error")
+            return None
 
 
     def configure_styles(self):
@@ -350,20 +410,6 @@ class ScreenshotApp:
                         background=self.colors["bg_light"],
                         foreground=self.colors["primary"])
 
-    def save_payload_to_file(self, payload):
-        """Save the payload to a JSON file in the script directory"""
-        try:
-            with open(self.payload_file, 'w') as f:
-                json.dump(payload, f, indent=2)
-            self.update_status(f"Payload saved to {self.payload_file}", "success")
-        except Exception as e:
-            logging.error(f"Error saving payload: {str(e)}") 
-            self.log_error({
-  "occured_while": "save_payload_to_file",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
-            self.update_status(f"Error saving payload: {str(e)}", "error")
 
     def setup_icon(self):
         try:
@@ -548,7 +594,9 @@ class ScreenshotApp:
 
     def handle_capture(self):
         if self.is_capturing:
-            return            
+            return
+        self.request_start_time = time.time()  # Start timing
+        self.update_status("Processing request...", "analyzing")
         capture_thread = threading.Thread(target=self.capture_active_window)
         capture_thread.daemon = True
         capture_thread.start()
@@ -806,52 +854,41 @@ class ScreenshotApp:
             self.update_status("Analyzing screenshot...", "analyzing")
 
             payload_json = {
-                "session_id": session_id,
-                "user_message": {
-                    "type": "image",
-                    "image": [img_str_raw],
-                },
-                "conversation_history": [
-                    {
-                        "role": "user",
-                        "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
-                        "attachments": [
-                            {
-                                "type": "file",
-                                "base64String": [img_str_raw]
-                            }
-                        ]
-                    }
-                ]
+                "message": "Get the required information from the image",
+                "image": img_str_raw 
             }
+            # Replace direct emit with async call through main loop
+            result= self.send_to_socketio(payload_json)
+            # structured_response = self.parse_markdown_response(result)
+            @self.sio.on('gemini_response')
+            def on_response(data):
+                logging.info(f"Received response from server: {data}")
 
-            result = self.make_api_call(payload_json)
+                if data is None:
+                    return
 
-            if result is None:
-                return
+                new_screenshot_data = {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    # "base64": img_str_raw,
+                    # "payload_json": payload_json,
+                    "api_response": data
+                }
+                self.screenshots.insert(0, new_screenshot_data)
 
-            new_screenshot_data = {
-                "image": screenshot,
-                "title": window_title,
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "path": file_path,
-                "base64": img_str_raw,
-                "payload_json": payload_json,
-                "api_response": result
-            }
-            self.screenshots.insert(0, new_screenshot_data)
+                self.add_screenshot_to_ui(0, new_screenshot_data)
 
-            self.add_screenshot_to_ui(0, new_screenshot_data)
-
-            self.update_status(f"Captured {capture_type}: {window_title}", "success")
+                self.update_status(f"Captured {capture_type}: {window_title}", "success")
 
         except Exception as e:
             logging.error(f"Error capturing screenshot: {str(e)}")
             self.log_error({
-  "occured_while": "capture_active_window",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
+                "occured_while": "capture_active_window",
+                "error_message": str(e),
+                "occured_in": "front-end"
+            })
             self.update_status(f"Error capturing screenshot: {str(e)}", "error")
 
         finally:
@@ -901,36 +938,60 @@ class ScreenshotApp:
             foreground=fg_color
         )
 
+
     def add_screenshot_to_ui(self, index, screenshot_data):
-        print(len(self.screenshots))
+         # Debug print to see what we're working with
+        print(f"Current screenshots count: {len(self.screenshots) if hasattr(self, 'screenshots') else 0}")
+        
+        # Ensure screenshots list exists
+        if not hasattr(self, 'screenshots') or self.screenshots is None:
+            self.screenshots = []
+        
+        # Add the new screenshot
+        self.screenshots.append(screenshot_data)
+        print(f"After adding, screenshots count: {len(self.screenshots)}")
+        
+        # If we exceed the limit (3 in your case)
+        if len(self.screenshots) > 20:
+            # Get reference to the UI element before removing it from the list
+            if hasattr(self, 'screenshots_container') and self.screenshots_container.winfo_children():
+                # Get the oldest UI element (first one added)
+                try:
+                    oldest_ui_element = self.screenshots_container.winfo_children()[0]
+                    print(f"Removing oldest UI element, child count before: {len(self.screenshots_container.winfo_children())}")
+                    oldest_ui_element.destroy()
+                    print(f"Child count after: {len(self.screenshots_container.winfo_children())}")
+                except (IndexError, TypeError) as e:
+                    print(f"Error removing UI element: {e}")
+            
+            # Now remove the oldest screenshot from our list (first one)
+            try:
+                removed = self.screenshots.pop(0)  # Remove the FIRST (oldest) element
+                print(f"Removed oldest screenshot: {removed.get('title', 'unknown')} from list")
+            except (IndexError, AttributeError) as e:
+                print(f"Error removing from screenshots list: {e}")
+                
+        
         if len(self.screenshots) % 2 == 0:
             bg=self.colors["bg_light"]
         else:   
             bg=self.colors["bg_dark"]
-        
-        api_response = screenshot_data.get("api_response", {})
-        inspector_notes = api_response.get("inspector_notes")
-        engine_details = api_response.get("engine_details")
-        fault_accident = api_response.get("fault_accident")
-        has_engine_issue = api_response.get("has_engine_issue", False)
+            
+        full_text = screenshot_data.get("api_response", "")
+        has_engine_issue = "<<<**Engine Description:**>>>" in full_text
+
+        # Use regex to extract each section
+        inspector_match = re.search(r"\*\*Inspector Notes:\*\*\s*\n(.*?)(?=(<<<\*\*Engine Description:\*\*>>>|\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+        engine_match = re.search(r"<<<\*\*Engine Description:\*\*>>>\s*\n(.*?)(?=(\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+        faults_match = re.search(r"\*\*Faults, Precautions, or Accident Information:\*\*\s*\n(.*)", full_text, re.DOTALL)
+
+        inspector_notes = inspector_match.group(1).strip() if inspector_match else ""
+        engine_details = engine_match.group(1).strip() if engine_match else ""
+        fault_accident = faults_match.group(1).strip() if faults_match else ""
         img = screenshot_data.get("image")
 
         frame = ttk.Frame(self.screenshots_container, relief="solid", borderwidth=1, padding=10)
         frame.pack(fill=tk.X, pady=(0, 15), padx=10, side=tk.TOP)
-
-        # if img:
-        #     max_width = 600
-        #     width, height = img.size
-        #     ratio = min(max_width / width, 1.0)
-        #     new_width = int(width * ratio)
-        #     new_height = int(height * ratio)
-        #     thumbnail = img.resize((new_width, new_height), Image.LANCZOS)
-        #     photo = ImageTk.PhotoImage(thumbnail)
-        #     screenshot_data["photo"] = photo
-
-            # image_label = ttk.Label(frame, image=photo)
-            # image_label.image = photo
-            # image_label.pack(pady=(0, 10))
 
         title_label = ttk.Label(
             frame,
@@ -939,13 +1000,8 @@ class ScreenshotApp:
             foreground=self.colors["primary"]
         )
         title_label.pack(pady=(5, 0))
-        # open_button = ttk.Button(
-        #     frame,
-        #     text="Open Image",
-        #     command=lambda path=screenshot_data["path"]: self.open_screenshot(path),
-        # )
-        # open_button.pack(pady=(5, 0))
-
+ # --- Scrollbars ---
+        v_scrollbar = ttk.Scrollbar(frame, orient="vertical")
         markdown_display = MarkdownText(
             frame,
             wrap=tk.WORD,
@@ -954,7 +1010,8 @@ class ScreenshotApp:
             font=("Arial", 11),
             bg=bg,
             padx=10,
-            pady=10
+            pady=10,
+            yscrollcommand=v_scrollbar.set
         )
         markdown_display.pack(fill=tk.BOTH, expand=True)
 
@@ -971,6 +1028,8 @@ class ScreenshotApp:
 
         if fault_accident and fault_accident.strip():
             markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
+        if not inspector_notes and not engine_details and not fault_accident:
+            markdown_content += f"{full_text}\n\n"
 
         markdown_display.config(state=tk.NORMAL)
 
@@ -994,7 +1053,8 @@ class ScreenshotApp:
 
         markdown_display.config(state=tk.DISABLED)
 
-        self.on_frame_configure(None)
+        
+        
 
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
@@ -1099,103 +1159,30 @@ class ScreenshotApp:
             self.update_status(f"Error opening folder: {str(e)}", "error")
     
     def on_close(self):
+        """Clean up Socket.IO connection before closing"""
+        if self.sio.connected:
+            self.main_loop.run_until_complete(self.sio.disconnect())
+            
+        # Close all thread loops
+        for loop in self.thread_loops.values():
+            try:
+                loop.stop()
+                loop.close()
+            except Exception:
+                pass
+                
+        self.main_loop.close()
         self.root.destroy()
 
-    def stream_api_response(self, response_data, is_mock=False):
-        """
-        Generator function that yields chunks of a formatted API response.
-        Works with both real API responses and mock responses.
-        """
-        import time
-        import random
-        
-        if is_mock:
-            full_formatted_text = response_data
-        else:
-            try:
-                parsed_data = json.loads(response_data)
-                full_formatted_text = parsed_data.get("assistant_message", "")
-            except json.JSONDecodeError:
-                full_formatted_text = response_data
-        
-        display_text = ""
-        chars = list(full_formatted_text)
-        
-        for char in chars:
-            display_text += char
-            yield display_text
-            time.sleep(random.uniform(0.01, 0.03))
-
-    def make_api_call(self, payload):
-        try:
-            # url = "http://localhost:8001/v1/chat"
-            url = "https://taroapi.impelox.com/v1/chat"
-
-            
-            headers = {
-                "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
-            }
-
-            response = requests.post(url, json=payload, headers=headers, stream=True)
-            response.raise_for_status()
-            print(response.json().get("assistant_message", ""))
-            
-
-           
-
-            structured_response = self.parse_markdown_response(response.json().get("assistant_message", ""))
-            return structured_response
-
-        except Exception as e:
-            logging.error(f"Error in API call: {str(e)}")
-            self.log_error({
-  "occured_while": "Making API call",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
-            self.update_status(f"API Error: {str(e)}", "error")
-            return None
-        
-        finally:
-            self.root.after(1000, self.remove_streaming_display)
 
 
 
     def log_error(self, payload):
         try:
-            
-            # url = "http://localhost:8001/v1/conversations/log-error"
-            url = "https://taroapi.impelox.com/v1/conversations/log-error"
-
-            
-            headers = {
-                "Content-Type": "application/json",
-                'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
-            }
-
-            response = requests.post(url, json=payload, headers=headers)
-            print(response)
-
-            
-
-           
-
-            
-
+            print("Logging error to Socket.IO")
         except Exception as e:
-            logging.error(f"Error in API call: {str(e)}")
-            self.log_error({
-  "occured_while": "insert in error log api",
-  "error_message": str(e),
-  "occured_in": "front-end"
-})
-            self.update_status(f"API Error: {str(e)}", "error")
+            logging.error(f"Error logging through Socket.IO: {str(e)}")
             return None
-        
-        finally:
-            self.root.after(1000, self.remove_streaming_display)
-
 
     def parse_markdown_response(self, markdown_text):
         """Parse the markdown response into structured data for storage"""
@@ -1220,7 +1207,7 @@ class ScreenshotApp:
             structured_data["fault_accident"] = fault_match.group(1).strip()
         
         return structured_data
-
+    
 
     def create_streaming_display(self):
         self.remove_streaming_display()
@@ -1303,6 +1290,15 @@ class ScreenshotApp:
                 delattr(self, 'markdown_text')
             if hasattr(self, 'analyzing_label'):
                 delattr(self, 'analyzing_label')
+
+    def get_thread_loop(self):
+        """Get or create event loop for current thread"""
+        thread_id = threading.get_ident()
+        if thread_id not in self.thread_loops:
+            loop = asyncio.new_event_loop()
+            self.thread_loops[thread_id] = loop
+            asyncio.set_event_loop(loop)
+        return self.thread_loops[thread_id]
 
 if __name__ == "__main__":
     root = tk.Tk()
