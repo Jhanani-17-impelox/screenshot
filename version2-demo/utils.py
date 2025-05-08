@@ -290,29 +290,26 @@ def draw_toggle(self):
         )
 
 def toggle_connection(self):
-        """Handle connection toggle between REST and WebSocket"""
+    """Handle connection toggle between REST and WebSocket"""
+    try:
+        previous_state = self.use_websocket
         self.use_websocket = self.connection_var.get()
-        print(f"Switching to {'WebSocket' if self.use_websocket else 'REST API'}",self.use_websocket)
+        print(f"Switching to {'WebSocket' if self.use_websocket else 'REST API'}")
+        
         if self.use_websocket:
-            # Switch to WebSocket
-            if not self.is_connected:
-                try:
-                    self.connect_socketio()
-                    self.update_status("Switched to low latency.", "switch")
-                except Exception as e:
-                    self.update_status("Failed to connect to WebSocket", "error")
-                    self.connection_var.set(False)
-                    self.use_websocket = False
+            self.update_status("Switched to low latency.", "switch")
         else:
-            # Switch to REST API
-            if self.is_connected:
-                try:
-                    self.sio.disconnect()
-                    self.is_connected = False
-                    self.update_status("Switched to high accuracy.", "switch")
-                except Exception as e:
-                    logging.error(f"Error disconnecting from WebSocket: {str(e)}")
-                    self.update_status("Error disconnecting from WebSocket", "error")
+            self.update_status("Switched to high accuracy.", "switch")
+            
+        # No need to disconnect WebSocket as we want to maintain the connection
+        # Only update the mode of operation
+        
+    except Exception as e:
+        logging.error(f"Error in toggle_connection: {str(e)}")
+        self.update_status("Error switching connection mode", "error")
+        # Revert the toggle state on error
+        self.connection_var.set(previous_state)
+        self.use_websocket = previous_state
 
      
 def create_connection_toggle(self):
@@ -324,7 +321,7 @@ def create_connection_toggle(self):
         toggle_container = ttk.Frame(toggle_frame)
         toggle_container.pack(side=tk.TOP)
         
-         # Create label for toggle next to the button
+        # Create label for toggle next to the button
         self.toggle_label = ttk.Label(
             toggle_container,
             text="Fast(beta)",
@@ -332,6 +329,7 @@ def create_connection_toggle(self):
             foreground=self.colors["primary"]
         )
         self.toggle_label.pack(side=tk.RIGHT, padx=(0, 5))
+        
         # Create canvas for custom toggle
         self.toggle_canvas = tk.Canvas(
             toggle_container,
@@ -342,14 +340,12 @@ def create_connection_toggle(self):
         )
         self.toggle_canvas.pack(side=tk.RIGHT, padx=(0, 0))
 
-       
-        
         # Create a fixed-width frame for the status label with minimum height
         status_frame = ttk.Frame(toggle_frame, width=220, height=20)
-        status_frame.pack(side=tk.TOP, pady=(5, 0), padx=(0, 0))  # Added right padding to move text left
+        status_frame.pack(side=tk.TOP, pady=(5, 0), padx=(0, 0))
         status_frame.pack_propagate(False)
         
-        # Status label with center alignment, shifted left
+        # Status label with center alignment
         self.toggle_status_label = ttk.Label(
             status_frame,
             text="",  # Initially empty
@@ -358,14 +354,14 @@ def create_connection_toggle(self):
             anchor="center",
             justify="center"
         )
-        self.toggle_status_label.pack(expand=True, fill="both", padx=(0, 15))  # Added right padding to shift text left
+        self.toggle_status_label.pack(expand=True, fill="both", padx=(0, 15))
         
         # Force the status frame to stay visible even when empty
         status_frame.grid_propagate(False)
         
-        # Initialize toggle state
-        self.connection_var = tk.BooleanVar(value=False)
-        draw_toggle(self)
+        # Initialize toggle state to REST API (False)
+        self.connection_var = tk.BooleanVar(value=False)  # False = REST API, True = WebSocket
+        draw_toggle(self)  # Draw initial toggle state
         
         # Bind click event
         self.toggle_canvas.bind("<Button-1>", self.on_toggle_click)

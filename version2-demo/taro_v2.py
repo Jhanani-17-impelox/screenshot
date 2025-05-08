@@ -37,12 +37,14 @@ class ScreenshotApp:
         try:
             self.root = root
             self.is_connected = False
-            self.use_websocket = False 
+            self.use_websocket = False  # Default to REST API mode
             self.root.title("Taro ")
             self.root.geometry("1024x768")
             self.root.resizable(True, True)
-            self.initial_load=False
+            self.initial_load = False
             self.script_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Configure colors and styles
             self.colors = {
                 "primary": "#4a6baf",
                 "secondary": "#7986cb",
@@ -63,7 +65,7 @@ class ScreenshotApp:
             
             self.screenshots = []
             self.is_capturing = False
-            self.drag_started = False  # To track if we're dragging
+            self.drag_started = False
             self.status_message = ""
             self.status_type = "info"
             
@@ -71,21 +73,20 @@ class ScreenshotApp:
             self.temp_dir = os.path.join(tempfile.gettempdir(), f"es_screenshots_{self.timestamp}")
             os.makedirs(self.temp_dir, exist_ok=True)
             
+            # Initialize Socket.IO and establish connection
+            self.sio = socketio.Client(reconnection=True, reconnection_attempts=5)
+            self.setup_socketio_events()
+            self.connect_socketio()  # Establish connection immediately
+            
             self.create_main_layout()
             self.create_floating_button()
-            create_connection_toggle(self)  # Add toggle button creation
+            create_connection_toggle(self)  # Add toggle button creation with REST as default
             
             self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-
-            # Initialize Socket.IO client but don't connect
-            self.sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=1, reconnection_delay_max=5)
-            self.setup_socketio_events()
             
-            self.request_start_time = None
-            self.thread_loops = {}
         except Exception as e:
             logging.error(f"Error initializing ScreenshotApp: {str(e)}")
-            log_error(self,{
+            log_error(self, {
                 "occured_while": "__init__",
                 "error_message": str(e),
                 "occured_in": "front-end"
@@ -124,24 +125,28 @@ class ScreenshotApp:
         try:
             @self.sio.event
             def connect():
-                logging.info("Connected to server")
+                logging.info("WebSocket connection established")
                 self.is_connected = True
-                self.update_status("Switched to low latency.", "switch")
+                # Don't show low latency message on initial connect since we're in REST mode by default
+                if self.use_websocket:
+                    self.update_status("Switched to low latency.", "switch")
                 threading.Thread(target=self.start_periodic_ping, daemon=True).start()
 
             @self.sio.event
             def connect_error(data):
-                logging.error(f"Connection failed: {data}")
+                logging.error(f"WebSocket connection failed: {data}")
                 self.is_connected = False
-                self.clear_websocket_events()  # Clear events on connection error
-                self.update_status("Socket.IO connection failed", "error")
+                self.clear_websocket_events()
+                if self.use_websocket:  # Only show error if we're actively using WebSocket
+                    self.update_status("Socket.IO connection failed", "error")
 
             @self.sio.event
             def disconnect():
                 self.is_connected = False
-                self.clear_websocket_events()  # Clear events on disconnect
-                logging.info("Disconnected from server")
-                self.update_status("Socket.IO disconnected", "info")
+                self.clear_websocket_events()
+                logging.info("Disconnected from WebSocket server")
+                if self.use_websocket:  # Only show message if we're actively using WebSocket
+                    self.update_status("Socket.IO disconnected", "info")
 
             @self.sio.on('ping')  
             def on_ping(data):
@@ -185,16 +190,21 @@ class ScreenshotApp:
 
     def connect_socketio(self):
         try:
-            print("Connecting to Socket.IO server...", self.is_connected)
+            print("Connecting to Socket.IO server...")
             if not self.is_connected:
-                self.sio.connect('wss://taroapi.impelox.com/gemini', transports=['websocket'])  
-                # self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'],socketio_path='/socket.io')  
-                print("Connected to server")    # Wait for the connection to be established                    
+                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])
+                # self.sio.connect('https://taroapi.impelox.com', transports=['websocket'])
+                print("Connected to server")
                 self.is_connected = True
+                
+                # Start the ping thread to maintain connection
+                if not hasattr(self, 'ping_thread') or not self.ping_thread.is_alive():
+                    self.ping_thread = threading.Thread(target=self.start_periodic_ping, daemon=True)
+                    self.ping_thread.start()
             return True
         except Exception as e:
             logging.error(f"Error connecting socketio: {str(e)}")
-            log_error(self,{
+            log_error(self, {
                 "occured_while": "connect_socketio",
                 "error_message": str(e),
                 "occured_in": "front-end"
@@ -207,6 +217,7 @@ class ScreenshotApp:
                 "message": "Get the required information from the image - Inspectore Notes, Faults, Precautions, or Accident Information and Engine Description",
                 "image": image_data 
             }
+            print("Sending data to websocket API")
             if not self.sio.connected:
                 self.connect_socketio()
             self.sio.emit('geminiRequest', payload)
@@ -248,8 +259,8 @@ class ScreenshotApp:
                     }
                 ]
             }
-            # url = "http://localhost:8001/v1/chat"
-            url = "https://taroapi.impelox.com/v1/chat"
+            url = "http://localhost:8001/v1/chat"
+            # url = "https://taroapi.impelox.com/v1/chat"
             print("Sending data to REST API")
             
             headers = {
