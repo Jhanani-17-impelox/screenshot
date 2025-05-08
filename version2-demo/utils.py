@@ -7,6 +7,7 @@ from datetime import datetime
 import re
 from itertools import cycle
 import logging
+import time
 
 class MarkdownText(tk.Text):
     """A Text widget with improved Markdown rendering capabilities"""
@@ -241,11 +242,13 @@ def draw_toggle(self):
         if not hasattr(self, '_first_load'):
             self._first_load = True
             status_text = ""
+            self.toggle_status_label.update()
         else:
             # After initial load, show switching message only when toggling
             if self._first_load:
                 self._first_load = False
-                status_text = ""
+                status_text = "Switching to low latency..."
+                time.sleep(0.5)  # Simulate delay for initial load
             else:
                 if self.connection_var.get():
                     status_text = "Switching to low latency..."
@@ -253,6 +256,11 @@ def draw_toggle(self):
                     status_text = "Switching to high accuracy..."
             
         # Update status label with more visible styling
+        self.toggle_status_label.config(
+            text=status_text,
+            foreground=self.colors["primary"],
+            font=("Arial", 9)
+        )
         self.toggle_status_label.config(
             text=status_text,
             foreground=self.colors["primary"],
@@ -332,7 +340,7 @@ def create_connection_toggle(self):
             bg=self.colors["bg_light"],
             highlightthickness=0
         )
-        self.toggle_canvas.pack(side=tk.RIGHT, padx=(30, 0))
+        self.toggle_canvas.pack(side=tk.RIGHT, padx=(0, 0))
 
        
         
