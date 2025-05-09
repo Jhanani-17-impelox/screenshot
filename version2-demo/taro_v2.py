@@ -81,7 +81,7 @@ class ScreenshotApp:
             self.create_main_layout()
             self.create_floating_button()
             create_connection_toggle(self)  # Add toggle button creation with REST as default
-            
+            self.thread_loops={}
             self.root.protocol("WM_DELETE_WINDOW", self.on_close)
             
         except Exception as e:
@@ -210,6 +210,21 @@ class ScreenshotApp:
                 "occured_in": "front-end"
             })
             return False
+    def get_bid_price(self,payload):
+        try:
+            if not self.sio.connected:
+                self.connect_socketio()
+            self.sio.emit('bidPriceRequest', payload)
+
+        except Exception as e:
+            logging.error(f"Error sending to socketio: {str(e)}")
+            log_error(self,{
+                "occured_while": "send_to_socketio",
+                "error_message": str(e),
+                "occured_in": "front-end"
+            })
+            return None
+            
 
     def send_to_socketio(self, image_data):
         try:
@@ -792,6 +807,15 @@ class ScreenshotApp:
                         self.screenshots.insert(0, new_screenshot_data)
                         self.add_screenshot_to_ui(0, new_screenshot_data)
                         self.update_status(f"Captured {capture_type}: {window_title}", "success")
+                self.get_bid_price(img_str_raw)
+
+                @self.sio.on('bidPriceResponse')
+                def on_bid_response(data):
+                    logging.info(f"Received response from server bid: {data}")
+                    print("data")
+                    if data is None:
+                        return
+
 
                 @self.sio.on('gemini_response')
                 def on_response(data):
