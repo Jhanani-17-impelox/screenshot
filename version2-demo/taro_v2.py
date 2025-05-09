@@ -83,6 +83,8 @@ class ScreenshotApp:
             create_connection_toggle(self)  # Add toggle button creation with REST as default
             
             self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+            self.thread_loops = {}
+
             
         except Exception as e:
             logging.error(f"Error initializing ScreenshotApp: {str(e)}")
@@ -217,9 +219,11 @@ class ScreenshotApp:
                 "message": "Get the required information from the image - Inspectore Notes, Faults, Precautions, or Accident Information and Engine Description",
                 "image": image_data 
             }
-            print("Sending data to websocket API")
+            
             if not self.sio.connected:
                 self.connect_socketio()
+                print("Sending data to websocket API")
+            print("already connected")
             self.sio.emit('geminiRequest', payload)
             try:
                return True
