@@ -186,17 +186,17 @@ def setup_icon(self):
 def log_error(self, payload):
         try:
             
-            # url = "http://localhost:8001/v1/conversations/log-error"
-            url = "https://taroapi.impelox.com/v1/conversations/log-error"
+            url = "http://localhost:8001/v1/conversations/log-error"
+            # url = "https://taroapi.impelox.com/v1/conversations/log-error"
 
-            
+            print(payload)
             headers = {
                 "Content-Type": "application/json",
                 'x-api-key': 'demomUwuvZaEYN38J74JVzidgPzGz49h4YwoFhKl2iPzwH4uV5Jm6VH9lZvKgKuO'
             }
 
-            response = requests.post(url, json=payload, headers=headers)
-            print(response)
+            # response = requests.post(url, json=payload, headers=headers)
+            # print(response)
 
 
         except Exception as e:
