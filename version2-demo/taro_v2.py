@@ -216,6 +216,7 @@ class ScreenshotApp:
         try:
             if not self.sio.connected:
                 self.connect_socketio()
+            print("send the request")
             self.sio.emit('bidPriceRequest', payload)
 
         except Exception as e:
@@ -256,28 +257,9 @@ class ScreenshotApp:
             })
             return None
 
-    def send_to_rest_api(self, image_data):
+    def send_to_rest_api(self, payload):
         try:
-            session_id = str(uuid.uuid4())
-            payload = {
-                "session_id": session_id,
-                "user_message": {
-                    "type": "image",
-                    "image": [image_data],
-                },
-                "conversation_history": [
-                    {
-                        "role": "user",
-                        "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
-                        "attachments": [
-                            {
-                                "type": "file",
-                                "base64String": [image_data]
-                            }
-                        ]
-                    }
-                ]
-            }
+            
             url = "http://localhost:8001/v1/chat"
             # url = "https://taroapi.impelox.com/v1/chat"
             print("Sending data to REST API")
@@ -789,58 +771,63 @@ class ScreenshotApp:
                 img_str_raw = base64.b64encode(buffered.getvalue()).decode()
 
                 session_id = str(uuid.uuid4())
+                session_id = str(uuid.uuid4())
+                payload = {
+                "session_id": session_id,
+                "user_message": {
+                    "type": "image",
+                    "image": [img_str_raw],
+                },
+                "conversation_history": [
+                    {
+                        "role": "user",
+                        "content": "get only the Inspector's Notes,Engine description and Fault parts and precautions accident from this image",
+                        "attachments": [
+                            {
+                                "type": "file",
+                                "base64String": [img_str_raw]
+                            }
+                        ]
+                    }
+                ]
+            }
                 self.update_status("Analyzing screenshot...", "analyzing")
 
+                # Store screenshot data temporarily
+                temp_screenshot_data = {
+                    "image": screenshot,
+                    "title": window_title,
+                    "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "path": file_path,
+                    "api_response": None,
+                    "bid_response": None
+                }
             
                 print(self.use_websocket, self.is_connected)
                 if self.use_websocket and self.is_connected:
-                    # Use WebSocket connection
+                    # Use WebSocket connection for both Gemini and bid price
                     result = self.send_to_socketio(img_str_raw)
+                    
+
+                    
+
+                    @self.sio.on('gemini_response')
+                    def on_response(data):
+                        logging.info(f"Received response from server: {data}")
+                        temp_screenshot_data["api_response"] = data
+                        self.update_screenshot_with_responses(temp_screenshot_data)
                 else:
                     # Use REST API
-                    result = self.send_to_rest_api(img_str_raw)
+                    result = self.send_to_rest_api(payload)
                     if result:
-                        # Handle REST API response directly
-                        new_screenshot_data = {
-                            "image": screenshot,
-                            "title": window_title,
-                            "timestamp": datetime.now().strftime("%H:%M:%S"),
-                            "path": file_path,
-                            "api_response": result
-                        }
-                        self.screenshots.insert(0, new_screenshot_data)
-                        self.add_screenshot_to_ui(0, new_screenshot_data)
-                        self.update_status(f"Captured {capture_type}: {window_title}", "success")
-                self.get_bid_price(img_str_raw)
-
+                        temp_screenshot_data["api_response"] = result
+                        self.update_screenshot_with_responses(temp_screenshot_data)
+                self.get_bid_price(payload)
                 @self.sio.on('bidPriceResponse')
                 def on_bid_response(data):
-                    logging.info(f"Received response from server bid: {data}")
-                    print("data")
-                    if data is None:
-                        return
-
-
-                @self.sio.on('gemini_response')
-                def on_response(data):
-                    logging.info(f"Received response from server: {data}")
-
-                    if data is None:
-                        return
-
-                    new_screenshot_data = {
-                        "image": screenshot,
-                        "title": window_title,
-                        "timestamp": datetime.now().strftime("%H:%M:%S"),
-                        "path": file_path,
-                        "api_response": data
-                    }
-                    self.screenshots.insert(0, new_screenshot_data)
-
-                    self.add_screenshot_to_ui(0, new_screenshot_data)
-
-                    self.update_status(f"Captured {capture_type}: {window_title}", "success")
-
+                    print(data)
+                    temp_screenshot_data["bid_response"] = data
+                    self.update_screenshot_with_responses(temp_screenshot_data)
             except Exception as e:
                 logging.error(f"Error capturing screenshot: {str(e)}")
                 log_error(self,{
@@ -1037,6 +1024,31 @@ class ScreenshotApp:
             logging.error(f"Error adding screenshot to UI: {str(e)}")
             log_error(self,{
                 "occured_while": "add_screenshot_to_ui",
+                "error_message": str(e),
+                "occured_in": "front-end"
+            })
+
+    def update_screenshot_with_responses(self, screenshot_data):
+        try:
+            # Check if we have both responses or at least one
+            if screenshot_data.get("api_response") is not None or screenshot_data.get("bid_response") is not None:
+                index = len(self.screenshots) if hasattr(self, 'screenshots') else 0
+                
+                # If bid response exists, append it to the API response
+                if screenshot_data.get("bid_response"):
+                    bid_info = f"\n\n**Bid Price Information:**\n{screenshot_data['bid_response']}"
+                    if screenshot_data.get("api_response"):
+                        screenshot_data["api_response"] += bid_info
+                    else:
+                        screenshot_data["api_response"] = bid_info
+
+                self.add_screenshot_to_ui(index, screenshot_data)
+                self.update_status("Analysis complete", "success")
+                
+        except Exception as e:
+            logging.error(f"Error updating screenshot with responses: {str(e)}")
+            log_error(self, {
+                "occured_while": "update_screenshot_with_responses",
                 "error_message": str(e),
                 "occured_in": "front-end"
             })
