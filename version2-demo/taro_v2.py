@@ -1030,16 +1030,8 @@ class ScreenshotApp:
 
     def update_screenshot_with_responses(self, screenshot_data):
         try:
-            # Check if we have both responses or at least one
+            # Check if we have at least one response
             if screenshot_data.get("api_response") is not None or screenshot_data.get("bid_response") is not None:
-                # If bid response exists, append it to the API response
-                if screenshot_data.get("bid_response"):
-                    bid_info = f"\n\n**Bid Price Information:**\n{screenshot_data['bid_response']}"
-                    if screenshot_data.get("api_response"):
-                        screenshot_data["api_response"] += bid_info
-                    else:
-                        screenshot_data["api_response"] = bid_info
-
                 # Check if this screenshot is already displayed
                 existing_index = None
                 for i, shot in enumerate(self.screenshots):
@@ -1074,7 +1066,7 @@ class ScreenshotApp:
                 "error_message": str(e),
                 "occured_in": "front-end"
             })
-            
+
     def create_bid_price_table(self, parent, bid_data):
         try:
             # Create a frame for the table
@@ -1120,6 +1112,7 @@ class ScreenshotApp:
         try:
             bg = self.colors["bg_light"] if len(self.screenshots) % 2 == 0 else self.colors["bg_dark"]
             
+            # Add title
             title_label = ttk.Label(
                 frame,
                 text=f"{screenshot_data['title']} - {screenshot_data['timestamp']}",
@@ -1128,7 +1121,70 @@ class ScreenshotApp:
             )
             title_label.pack(pady=(5, 0))
 
-            # First handle the bid price data if it exists
+            # First handle API response text
+            if screenshot_data.get("api_response"):
+                v_scrollbar = ttk.Scrollbar(frame, orient="vertical")
+                markdown_display = MarkdownText(
+                    frame,
+                    wrap=tk.WORD,
+                    width=70,
+                    height=20,
+                    font=("Arial", 11),
+                    bg=bg,
+                    padx=10,
+                    pady=10,
+                    yscrollcommand=v_scrollbar.set
+                )
+                markdown_display.pack(fill=tk.BOTH, expand=True)
+
+                # Process the API response text
+                full_text = screenshot_data.get("api_response", "")
+                has_engine_issue = "<<<**Engine Description:**>>>" in full_text
+
+                inspector_match = re.search(r"\*\*Inspector Notes:\*\*\s*\n(.*?)(?=(<<<\*\*Engine Description:\*\*>>>|\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+                engine_match = re.search(r"<<<\*\*Engine Description:\*\*>>>\s*\n(.*?)(?=(\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
+                faults_match = re.search(r"\*\*Faults, Precautions, or Accident Information:\*\*\s*\n(.*)", full_text, re.DOTALL)
+
+                inspector_notes = inspector_match.group(1).strip() if inspector_match else ""
+                engine_details = engine_match.group(1).strip() if engine_match else ""
+                fault_accident = faults_match.group(1).strip() if faults_match else ""
+
+                markdown_content = ""
+                if inspector_notes and inspector_notes.strip():
+                    markdown_content += f"**Inspector Notes:**\n{inspector_notes.strip()}\n\n"
+
+                if engine_details and engine_details.strip():
+                    if has_engine_issue:
+                        markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
+                    else:
+                        markdown_content += f"**Engine Details:**\n{engine_details.strip()}\n\n"
+
+                if fault_accident and fault_accident.strip():
+                    markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
+
+                markdown_display.config(state=tk.NORMAL)
+
+                if has_engine_issue and engine_details:
+                    parts = markdown_content.split("<<<**Engine Description:**>>>")
+                    markdown_display.insert_markdown(parts[0])
+                    markdown_display.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
+
+                    engine_text = parts[1]
+                    next_section = re.search(r'\n\n\*\*', engine_text)
+
+                    if next_section:
+                        engine_details_part = engine_text[:next_section.start()]
+                        markdown_display.insert(tk.END, engine_details_part.strip(), "engine_issue")
+                        remaining_text = engine_text[next_section.start():]
+                        markdown_display.insert_markdown(remaining_text)
+                    else:
+                        markdown_display.insert(tk.END, engine_text.strip(), "engine_issue")
+                else:
+                    markdown_display.insert_markdown(markdown_content)
+                
+                markdown_display.config(state=tk.DISABLED)
+
+            # Then add bid price table if it exists
             if screenshot_data.get("bid_response"):
                 bid_label = ttk.Label(
                     frame,
@@ -1138,67 +1194,7 @@ class ScreenshotApp:
                 )
                 bid_label.pack(pady=(10, 5))
                 self.create_bid_price_table(frame, screenshot_data["bid_response"])
-            
-            v_scrollbar = ttk.Scrollbar(frame, orient="vertical")
-            markdown_display = MarkdownText(
-                frame,
-                wrap=tk.WORD,
-                width=70,
-                height=20,
-                font=("Arial", 11),
-                bg=bg,
-                padx=10,
-                pady=10,
-                yscrollcommand=v_scrollbar.set
-            )
-            markdown_display.pack(fill=tk.BOTH, expand=True)
 
-            # Process the API response text
-            full_text = screenshot_data.get("api_response", "")
-            has_engine_issue = "<<<**Engine Description:**>>>" in full_text
-
-            inspector_match = re.search(r"\*\*Inspector Notes:\*\*\s*\n(.*?)(?=(<<<\*\*Engine Description:\*\*>>>|\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
-            engine_match = re.search(r"<<<\*\*Engine Description:\*\*>>>\s*\n(.*?)(?=(\*\*Faults, Precautions,|$))", full_text, re.DOTALL)
-            faults_match = re.search(r"\*\*Faults, Precautions, or Accident Information:\*\*\s*\n(.*)", full_text, re.DOTALL)
-
-            inspector_notes = inspector_match.group(1).strip() if inspector_match else ""
-            engine_details = engine_match.group(1).strip() if engine_match else ""
-            fault_accident = faults_match.group(1).strip() if faults_match else ""
-
-            markdown_content = ""
-            if inspector_notes and inspector_notes.strip():
-                markdown_content += f"**Inspector Notes:**\n{inspector_notes.strip()}\n\n"
-
-            if engine_details and engine_details.strip():
-                if has_engine_issue:
-                    markdown_content += "<<<**Engine Description:**>>>\n" + engine_details.strip() + "\n\n"
-                else:
-                    markdown_content += f"**Engine Details:**\n{engine_details.strip()}\n\n"
-
-            if fault_accident and fault_accident.strip():
-                markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
-
-            markdown_display.config(state=tk.NORMAL)
-
-            if has_engine_issue and engine_details:
-                parts = markdown_content.split("<<<**Engine Description:**>>>")
-                markdown_display.insert_markdown(parts[0])
-                markdown_display.insert(tk.END, "Engine Issue Detected: ", "engine_issue")
-
-                engine_text = parts[1]
-                next_section = re.search(r'\n\n\*\*', engine_text)
-
-                if next_section:
-                    engine_details_part = engine_text[:next_section.start()]
-                    markdown_display.insert(tk.END, engine_details_part.strip(), "engine_issue")
-                    remaining_text = engine_text[next_section.start():]
-                    markdown_display.insert_markdown(remaining_text)
-                else:
-                    markdown_display.insert(tk.END, engine_text.strip(), "engine_issue")
-            else:
-                markdown_display.insert_markdown(markdown_content)
-            
-            markdown_display.config(state=tk.DISABLED)
         except Exception as e:
             logging.error(f"Error populating screenshot frame: {str(e)}")
             log_error(self, {
