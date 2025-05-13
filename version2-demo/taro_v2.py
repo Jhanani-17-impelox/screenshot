@@ -1075,6 +1075,47 @@ class ScreenshotApp:
                 "occured_in": "front-end"
             })
             
+    def create_bid_price_table(self, parent, bid_data):
+        try:
+            # Create a frame for the table
+            table_frame = ttk.Frame(parent)
+            table_frame.pack(fill=tk.X, pady=(5, 10))
+
+            # Parse the bid_data string into a list of dictionaries
+            try:
+                if isinstance(bid_data, str):
+                    bid_data = json.loads(bid_data)
+                if not isinstance(bid_data, list):
+                    bid_data = [bid_data]
+            except json.JSONDecodeError:
+                logging.error("Failed to parse bid price data")
+                return
+
+            # Create Treeview
+            columns = list(bid_data[0].keys())
+            tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=len(bid_data))
+
+            # Configure scrollbar
+            vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+            vsb.pack(side=tk.RIGHT, fill=tk.Y)
+            tree.configure(yscrollcommand=vsb.set)
+
+            # Configure column headings and widths
+            for col in columns:
+                tree.heading(col, text=col.replace('_', ' ').title())
+                tree.column(col, anchor="center", width=100)
+
+            # Insert bid price data
+            for item in bid_data:
+                values = [item[col] for col in columns]
+                tree.insert("", "end", values=values)
+
+            tree.pack(expand=True, fill=tk.X)
+            return table_frame
+        except Exception as e:
+            logging.error(f"Error creating bid price table: {str(e)}")
+            return None
+
     def populate_screenshot_frame(self, frame, screenshot_data):
         try:
             bg = self.colors["bg_light"] if len(self.screenshots) % 2 == 0 else self.colors["bg_dark"]
@@ -1086,6 +1127,17 @@ class ScreenshotApp:
                 foreground=self.colors["primary"]
             )
             title_label.pack(pady=(5, 0))
+
+            # First handle the bid price data if it exists
+            if screenshot_data.get("bid_response"):
+                bid_label = ttk.Label(
+                    frame,
+                    text="Bid Price Information",
+                    font=("Arial", 11, "bold"),
+                    foreground=self.colors["primary"]
+                )
+                bid_label.pack(pady=(10, 5))
+                self.create_bid_price_table(frame, screenshot_data["bid_response"])
             
             v_scrollbar = ttk.Scrollbar(frame, orient="vertical")
             markdown_display = MarkdownText(
@@ -1101,6 +1153,7 @@ class ScreenshotApp:
             )
             markdown_display.pack(fill=tk.BOTH, expand=True)
 
+            # Process the API response text
             full_text = screenshot_data.get("api_response", "")
             has_engine_issue = "<<<**Engine Description:**>>>" in full_text
 
@@ -1124,8 +1177,6 @@ class ScreenshotApp:
 
             if fault_accident and fault_accident.strip():
                 markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
-            if not inspector_notes and not engine_details and not fault_accident:
-                markdown_content += f"{full_text}\n\n"
 
             markdown_display.config(state=tk.NORMAL)
 
