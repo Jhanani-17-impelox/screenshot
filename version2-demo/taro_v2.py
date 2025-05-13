@@ -1121,11 +1121,15 @@ class ScreenshotApp:
             )
             title_label.pack(pady=(5, 0))
 
-            # First handle API response text
+            # Create a single scrollable content frame
+            content_frame = ttk.Frame(frame)
+            content_frame.pack(fill=tk.BOTH, expand=True)
+
             if screenshot_data.get("api_response"):
-                v_scrollbar = ttk.Scrollbar(frame, orient="vertical")
+                # Create a markdown display for API response
+                v_scrollbar = ttk.Scrollbar(content_frame, orient="vertical")
                 markdown_display = MarkdownText(
-                    frame,
+                    content_frame,
                     wrap=tk.WORD,
                     width=70,
                     height=20,
@@ -1162,6 +1166,10 @@ class ScreenshotApp:
                 if fault_accident and fault_accident.strip():
                     markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
 
+                # Add bid price information if available
+                if screenshot_data.get("bid_response"):
+                    markdown_content += "\n**Bid Price Information:**\n\n"
+                    
                 markdown_display.config(state=tk.NORMAL)
 
                 if has_engine_issue and engine_details:
@@ -1182,18 +1190,13 @@ class ScreenshotApp:
                 else:
                     markdown_display.insert_markdown(markdown_content)
                 
-                markdown_display.config(state=tk.DISABLED)
+                # Add bid price table right after the API response in the same markdown display
+                if screenshot_data.get("bid_response"):
+                    bid_frame = ttk.Frame(content_frame)
+                    bid_frame.pack(fill=tk.X, expand=True, pady=(5, 10))
+                    self.create_bid_price_table(bid_frame, screenshot_data["bid_response"])
 
-            # Then add bid price table if it exists
-            if screenshot_data.get("bid_response"):
-                bid_label = ttk.Label(
-                    frame,
-                    text="Bid Price Information",
-                    font=("Arial", 11, "bold"),
-                    foreground=self.colors["primary"]
-                )
-                bid_label.pack(pady=(10, 5))
-                self.create_bid_price_table(frame, screenshot_data["bid_response"])
+                markdown_display.config(state=tk.DISABLED)
 
         except Exception as e:
             logging.error(f"Error populating screenshot frame: {str(e)}")
