@@ -194,8 +194,8 @@ class ScreenshotApp:
         try:
             print("Connecting to Socket.IO server...")
             if not self.is_connected:
-                self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])
-                # self.sio.connect('https://taroapi.impelox.com', transports=['websocket'])
+                # self.sio.connect('ws://localhost:8001/gemini', transports=['websocket'])
+                self.sio.connect('https://taroapi.impelox.com', transports=['websocket'])
                 print("Connected to server")
                 self.is_connected = True
                 
@@ -260,8 +260,8 @@ class ScreenshotApp:
     def send_to_rest_api(self, payload):
         try:
             
-            url = "http://localhost:8001/v1/chat"
-            # url = "https://taroapi.impelox.com/v1/chat"
+            # url = "http://localhost:8001/v1/chat"
+            url = "https://taroapi.impelox.com/v1/chat"
             print("Sending data to REST API")
             
             headers = {
@@ -826,7 +826,10 @@ class ScreenshotApp:
                 @self.sio.on('bidPriceResponse')
                 def on_bid_response(data):
                     print(data)
-                    temp_screenshot_data["bid_response"] = data
+                    if data =={} :
+                         temp_screenshot_data["bid_response"] = None
+                    else:
+                        temp_screenshot_data["bid_response"] = data
                     self.update_screenshot_with_responses(temp_screenshot_data)
             except Exception as e:
                 logging.error(f"Error capturing screenshot: {str(e)}")
@@ -1167,8 +1170,8 @@ class ScreenshotApp:
                     markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
 
                 # Add bid price information if available
-                # if screenshot_data.get("bid_response"):
-                #     markdown_content += "\n**Bid Price Information:**\n\n"
+                if screenshot_data.get("bid_response")is None and screenshot_data.get("bid_response") is []:
+                    markdown_content += "\n**No Auction Data is Avialble**\n\n"
                     
                 markdown_display.config(state=tk.NORMAL)
 
