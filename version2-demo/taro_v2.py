@@ -1132,7 +1132,7 @@ class ScreenshotApp:
                     content_frame,
                     wrap=tk.WORD,
                     width=70,
-                    height=20,
+                    height=18,
                     font=("Arial", 11),
                     bg=bg,
                     padx=10,
@@ -1167,8 +1167,8 @@ class ScreenshotApp:
                     markdown_content += f"**Faults, Precautions, or Accident Information:**\n{fault_accident.strip()}\n\n"
 
                 # Add bid price information if available
-                if screenshot_data.get("bid_response"):
-                    markdown_content += "\n**Bid Price Information:**\n\n"
+                # if screenshot_data.get("bid_response"):
+                #     markdown_content += "\n**Bid Price Information:**\n\n"
                     
                 markdown_display.config(state=tk.NORMAL)
 
@@ -1195,6 +1195,9 @@ class ScreenshotApp:
                     bid_frame = ttk.Frame(content_frame)
                     bid_frame.pack(fill=tk.X, expand=True, pady=(5, 10))
                     self.create_bid_price_table(bid_frame, screenshot_data["bid_response"])
+                    # Ensure canvas scrolls to bottom after bid price table is added
+                    self.canvas.update_idletasks()
+                    self.canvas.yview_moveto(1.0)
 
                 markdown_display.config(state=tk.DISABLED)
 
